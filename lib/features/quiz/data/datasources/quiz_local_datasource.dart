@@ -28,21 +28,21 @@ class QuizLocalDataSource {
     if (draftRow == null) return null;
 
     final answersQuery = database.select(database.quizAnswers)
-      ..where(
-        (tbl) =>
-            tbl.draftId.equals(draftRow.id) & tbl.learnerId.equals(learnerId),
-      );
+      ..where((tbl) => tbl.draftId.equals(draftRow.id));
     final answerRows = await answersQuery.get();
 
     final Map<String, String> decryptedAnswers = {};
     for (final row in answerRows) {
       try {
+        final aad =
+            '$learnerId:${draftRow.lessonId}:${draftRow.revisionId}:${row.questionId}';
         final decryptedOption = await encryptionService.decrypt(
-          row.encryptedSelectedOptionId,
+          cipherText: row.encryptedSelectedOptionId,
+          associatedData: aad,
         );
         decryptedAnswers[row.questionId] = decryptedOption;
       } catch (_) {
-        // Corrupted answer payload: discard corrupted option rather than crash
+        // Corrupted or tampered answer payload: discard corrupted option rather than crash
       }
     }
 
@@ -68,7 +68,11 @@ class QuizLocalDataSource {
     required int currentQuestionIndex,
   }) async {
     final draftId = '${learnerId}_$lessonId';
-    final encryptedOption = await encryptionService.encrypt(optionId);
+    final aad = '$learnerId:$lessonId:$revisionId:$questionId';
+    final encryptedOption = await encryptionService.encrypt(
+      plainText: optionId,
+      associatedData: aad,
+    );
     final now = DateTime.now();
 
     await database.transaction(() async {
@@ -95,7 +99,6 @@ class QuizLocalDataSource {
             QuizAnswersCompanion(
               id: Value(answerId),
               draftId: Value(draftId),
-              learnerId: Value(learnerId),
               questionId: Value(questionId),
               encryptedSelectedOptionId: Value(encryptedOption),
               updatedAt: Value(now),

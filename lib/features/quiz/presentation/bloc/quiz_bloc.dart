@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/security/session_manager.dart';
 import '../../domain/repositories/quiz_repository.dart';
 import 'quiz_event.dart';
 import 'quiz_state.dart';
@@ -6,26 +7,41 @@ import 'quiz_state.dart';
 /// Manages interactive multiple-choice quiz workflow and atomic draft persistence
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
   final QuizRepository quizRepository;
+  final ISessionManager? sessionManager;
   String? _activeLessonId;
+  String? _activeLearnerId;
 
-  QuizBloc({required this.quizRepository}) : super(const QuizInitial()) {
+  QuizBloc({required this.quizRepository, this.sessionManager})
+    : super(const QuizInitial()) {
     on<StartQuiz>(_onStartQuiz);
     on<AnswerSelected>(_onAnswerSelected);
     on<NextQuestion>(_onNextQuestion);
     on<PreviousQuestion>(_onPreviousQuestion);
     on<JumpToQuestion>(_onJumpToQuestion);
     on<RevisionMismatchResolved>(_onRevisionMismatchResolved);
+    on<ResetQuiz>(_onResetQuiz);
+  }
+
+  void _onResetQuiz(ResetQuiz event, Emitter<QuizState> emit) {
+    _activeLessonId = null;
+    _activeLearnerId = null;
+    emit(const QuizInitial());
   }
 
   Future<void> _onStartQuiz(StartQuiz event, Emitter<QuizState> emit) async {
     emit(const QuizLoading());
     _activeLessonId = event.lessonId;
+    _activeLearnerId =
+        event.learnerId ?? sessionManager?.activeLearnerId ?? 'unknown';
 
     try {
       final questions = await quizRepository.getQuestionsForLesson(
         event.lessonId,
       );
-      final existingDraft = await quizRepository.getDraft(event.lessonId);
+      final existingDraft = await quizRepository.getDraft(
+        learnerId: _activeLearnerId!,
+        lessonId: event.lessonId,
+      );
 
       if (existingDraft != null) {
         // Revision check: if draft revision differs from current content revision, prompt learner
@@ -75,8 +91,17 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     AnswerSelected event,
     Emitter<QuizState> emit,
   ) async {
-    if (state is! QuizInProgress || _activeLessonId == null) return;
+    if (state is! QuizInProgress) return;
     final current = state as QuizInProgress;
+
+    final lessonId =
+        _activeLessonId ??
+        (current.questions.isNotEmpty
+            ? current.questions.first.lessonId
+            : null);
+    final learnerId = _activeLearnerId ?? sessionManager?.activeLearnerId;
+
+    if (lessonId == null || learnerId == null) return;
 
     final updatedAnswers = Map<String, String>.from(current.answers)
       ..[event.questionId] = event.optionId;
@@ -85,7 +110,8 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
 
     try {
       await quizRepository.saveAnswer(
-        lessonId: _activeLessonId!,
+        learnerId: learnerId,
+        lessonId: lessonId,
         revisionId: current.revisionId,
         questionId: event.questionId,
         optionId: event.optionId,
@@ -113,14 +139,22 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     NextQuestion event,
     Emitter<QuizState> emit,
   ) async {
-    if (state is! QuizInProgress || _activeLessonId == null) return;
+    if (state is! QuizInProgress) return;
     final current = state as QuizInProgress;
+    final lessonId =
+        _activeLessonId ??
+        (current.questions.isNotEmpty
+            ? current.questions.first.lessonId
+            : null);
+    final learnerId = _activeLearnerId ?? sessionManager?.activeLearnerId;
+    if (lessonId == null || learnerId == null) return;
 
     if (current.currentIndex < current.totalQuestions - 1) {
       final newIndex = current.currentIndex + 1;
       emit(current.copyWith(currentIndex: newIndex));
       await quizRepository.updatePosition(
-        lessonId: _activeLessonId!,
+        learnerId: learnerId,
+        lessonId: lessonId,
         currentQuestionIndex: newIndex,
       );
     }
@@ -130,14 +164,22 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     PreviousQuestion event,
     Emitter<QuizState> emit,
   ) async {
-    if (state is! QuizInProgress || _activeLessonId == null) return;
+    if (state is! QuizInProgress) return;
     final current = state as QuizInProgress;
+    final lessonId =
+        _activeLessonId ??
+        (current.questions.isNotEmpty
+            ? current.questions.first.lessonId
+            : null);
+    final learnerId = _activeLearnerId ?? sessionManager?.activeLearnerId;
+    if (lessonId == null || learnerId == null) return;
 
     if (current.currentIndex > 0) {
       final newIndex = current.currentIndex - 1;
       emit(current.copyWith(currentIndex: newIndex));
       await quizRepository.updatePosition(
-        lessonId: _activeLessonId!,
+        learnerId: learnerId,
+        lessonId: lessonId,
         currentQuestionIndex: newIndex,
       );
     }
@@ -147,13 +189,21 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     JumpToQuestion event,
     Emitter<QuizState> emit,
   ) async {
-    if (state is! QuizInProgress || _activeLessonId == null) return;
+    if (state is! QuizInProgress) return;
     final current = state as QuizInProgress;
+    final lessonId =
+        _activeLessonId ??
+        (current.questions.isNotEmpty
+            ? current.questions.first.lessonId
+            : null);
+    final learnerId = _activeLearnerId ?? sessionManager?.activeLearnerId;
+    if (lessonId == null || learnerId == null) return;
 
     if (event.index >= 0 && event.index < current.totalQuestions) {
       emit(current.copyWith(currentIndex: event.index));
       await quizRepository.updatePosition(
-        lessonId: _activeLessonId!,
+        learnerId: learnerId,
+        lessonId: lessonId,
         currentQuestionIndex: event.index,
       );
     }
@@ -163,7 +213,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     RevisionMismatchResolved event,
     Emitter<QuizState> emit,
   ) async {
-    if (state is! QuizRevisionMismatch || _activeLessonId == null) return;
+    if (state is! QuizRevisionMismatch ||
+        _activeLessonId == null ||
+        _activeLearnerId == null) {
+      return;
+    }
     final mismatchState = state as QuizRevisionMismatch;
 
     emit(const QuizLoading());
@@ -175,7 +229,10 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
 
       if (event.resetDraft) {
         // Discard old revision draft and start fresh
-        await quizRepository.clearDraft(_activeLessonId!);
+        await quizRepository.clearDraft(
+          learnerId: _activeLearnerId!,
+          lessonId: _activeLessonId!,
+        );
         emit(
           QuizInProgress(
             questions: questions,

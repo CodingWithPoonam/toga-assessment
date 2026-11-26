@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import '../../../../core/database/app_database.dart';
 import '../models/lesson_model.dart';
 
@@ -25,8 +26,31 @@ class LessonLocalDataSource {
     return result != null ? LessonModel.fromDrift(result) : null;
   }
 
+  Future<LessonModel?> getLessonByRevision({
+    required String lessonId,
+    required String revisionId,
+  }) async {
+    final query = database.select(database.cachedLessons)
+      ..where(
+        (tbl) => tbl.id.equals(lessonId) & tbl.revisionId.equals(revisionId),
+      );
+    final result = await query.getSingleOrNull();
+    return result != null ? LessonModel.fromDrift(result) : null;
+  }
+
   Future<bool> isLessonCached(String lessonId) async {
     final lesson = await getCachedLessonById(lessonId);
+    return lesson != null;
+  }
+
+  Future<bool> isRevisionCached({
+    required String lessonId,
+    required String revisionId,
+  }) async {
+    final lesson = await getLessonByRevision(
+      lessonId: lessonId,
+      revisionId: revisionId,
+    );
     return lesson != null;
   }
 }

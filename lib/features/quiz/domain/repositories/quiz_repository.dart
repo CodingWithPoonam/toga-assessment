@@ -4,9 +4,13 @@ import '../entities/quiz_question.dart';
 abstract class QuizRepository {
   Future<List<QuizQuestion>> getQuestionsForLesson(String lessonId);
 
-  Future<QuizDraft?> getDraft(String lessonId);
+  Future<QuizDraft?> getDraft({
+    required String learnerId,
+    required String lessonId,
+  });
 
   Future<void> saveAnswer({
+    required String learnerId,
     required String lessonId,
     required String revisionId,
     required String questionId,
@@ -15,11 +19,15 @@ abstract class QuizRepository {
   });
 
   Future<void> updatePosition({
+    required String learnerId,
     required String lessonId,
     required int currentQuestionIndex,
   });
 
-  Future<void> clearDraft(String lessonId);
+  Future<void> clearDraft({
+    required String learnerId,
+    required String lessonId,
+  });
 
   Future<bool> isRevisionCurrent({
     required String lessonId,

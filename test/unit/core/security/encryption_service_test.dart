@@ -48,12 +48,12 @@ void main() {
 
     test('encrypts and decrypts string correctly (round-trip)', () async {
       const plainText = '{"lessonId":"L01","learnerProgress":100}';
-      final cipherText = await encryptionService.encrypt(plainText);
+      final cipherText = await encryptionService.encrypt(plainText: plainText);
 
       expect(cipherText, isNotEmpty);
       expect(cipherText, isNot(equals(plainText)));
 
-      final decrypted = await encryptionService.decrypt(cipherText);
+      final decrypted = await encryptionService.decrypt(cipherText: cipherText);
       expect(decrypted, equals(plainText));
     });
 
@@ -61,27 +61,67 @@ void main() {
       'produces different ciphertexts for the same plaintext (unique nonces)',
       () async {
         const plainText = 'confidential draft response';
-        final cipherText1 = await encryptionService.encrypt(plainText);
-        final cipherText2 = await encryptionService.encrypt(plainText);
+        final cipherText1 = await encryptionService.encrypt(
+          plainText: plainText,
+        );
+        final cipherText2 = await encryptionService.encrypt(
+          plainText: plainText,
+        );
 
         expect(cipherText1, isNot(equals(cipherText2)));
 
-        expect(await encryptionService.decrypt(cipherText1), equals(plainText));
-        expect(await encryptionService.decrypt(cipherText2), equals(plainText));
+        expect(
+          await encryptionService.decrypt(cipherText: cipherText1),
+          equals(plainText),
+        );
+        expect(
+          await encryptionService.decrypt(cipherText: cipherText2),
+          equals(plainText),
+        );
       },
     );
 
     test('throws SecurityException when ciphertext is tampered', () async {
       const plainText = 'secure payload';
-      final cipherText = await encryptionService.encrypt(plainText);
+      final cipherText = await encryptionService.encrypt(plainText: plainText);
 
       // Alter bytes
       final tampered = '${cipherText.substring(0, cipherText.length - 2)}AA';
 
       expect(
-        () => encryptionService.decrypt(tampered),
+        () => encryptionService.decrypt(cipherText: tampered),
         throwsA(isA<SecurityException>()),
       );
     });
+
+    test(
+      'Authenticated Additional Data (AAD) binds ciphertext to record',
+      () async {
+        const plainText = 'opt_1c';
+        const correctAad = 'learner-a:lesson_1:rev_1_0:q1';
+        const forgedAad = 'learner-b:lesson_1:rev_1_0:q1';
+
+        final cipherText = await encryptionService.encrypt(
+          plainText: plainText,
+          associatedData: correctAad,
+        );
+
+        // Decryption with matching AAD succeeds
+        final decrypted = await encryptionService.decrypt(
+          cipherText: cipherText,
+          associatedData: correctAad,
+        );
+        expect(decrypted, equals(plainText));
+
+        // Decryption with mismatched AAD fails with SecurityException
+        expect(
+          () => encryptionService.decrypt(
+            cipherText: cipherText,
+            associatedData: forgedAad,
+          ),
+          throwsA(isA<SecurityException>()),
+        );
+      },
+    );
   });
 }

@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:toga_assessment/core/security/session_manager.dart';
 import 'package:toga_assessment/features/quiz/data/datasources/quiz_fixture_datasource.dart';
 import 'package:toga_assessment/features/quiz/domain/entities/quiz_question.dart';
 import 'package:toga_assessment/features/quiz/domain/repositories/quiz_repository.dart';
@@ -10,8 +11,11 @@ import 'package:toga_assessment/features/quiz/presentation/bloc/quiz_state.dart'
 
 class MockQuizRepository extends Mock implements QuizRepository {}
 
+class MockSessionManager extends Mock implements ISessionManager {}
+
 void main() {
   late MockQuizRepository mockQuizRepository;
+  late MockSessionManager mockSessionManager;
   late QuizBloc quizBloc;
 
   final List<QuizQuestion> sampleQuestions =
@@ -29,7 +33,12 @@ void main() {
 
   setUp(() {
     mockQuizRepository = MockQuizRepository();
-    quizBloc = QuizBloc(quizRepository: mockQuizRepository);
+    mockSessionManager = MockSessionManager();
+    when(() => mockSessionManager.activeLearnerId).thenReturn('learner-a');
+    quizBloc = QuizBloc(
+      quizRepository: mockQuizRepository,
+      sessionManager: mockSessionManager,
+    );
   });
 
   tearDown(() {
@@ -49,7 +58,10 @@ void main() {
               mockQuizRepository.getQuestionsForLesson('provisional_lesson_1'),
         ).thenAnswer((_) async => sampleQuestions);
         when(
-          () => mockQuizRepository.getDraft('provisional_lesson_1'),
+          () => mockQuizRepository.getDraft(
+            learnerId: any(named: 'learnerId'),
+            lessonId: 'provisional_lesson_1',
+          ),
         ).thenAnswer((_) async => null);
         return quizBloc;
       },
@@ -57,6 +69,7 @@ void main() {
         const StartQuiz(
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
+          learnerId: 'learner-a',
         ),
       ),
       expect: () => [
@@ -79,7 +92,10 @@ void main() {
               mockQuizRepository.getQuestionsForLesson('provisional_lesson_1'),
         ).thenAnswer((_) async => sampleQuestions);
         when(
-          () => mockQuizRepository.getDraft('provisional_lesson_1'),
+          () => mockQuizRepository.getDraft(
+            learnerId: any(named: 'learnerId'),
+            lessonId: 'provisional_lesson_1',
+          ),
         ).thenAnswer((_) async => sampleDraft);
         return quizBloc;
       },
@@ -87,6 +103,7 @@ void main() {
         const StartQuiz(
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
+          learnerId: 'learner-a',
         ),
       ),
       expect: () => [
@@ -109,7 +126,10 @@ void main() {
               mockQuizRepository.getQuestionsForLesson('provisional_lesson_1'),
         ).thenAnswer((_) async => sampleQuestions);
         when(
-          () => mockQuizRepository.getDraft('provisional_lesson_1'),
+          () => mockQuizRepository.getDraft(
+            learnerId: any(named: 'learnerId'),
+            lessonId: 'provisional_lesson_1',
+          ),
         ).thenAnswer(
           (_) async => sampleDraft.copyWith(revisionId: 'rev_0_9_old'),
         );
@@ -119,6 +139,7 @@ void main() {
         const StartQuiz(
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
+          learnerId: 'learner-a',
         ),
       ),
       expect: () => [const QuizLoading(), isA<QuizRevisionMismatch>()],
@@ -129,6 +150,7 @@ void main() {
       build: () {
         when(
           () => mockQuizRepository.saveAnswer(
+            learnerId: any(named: 'learnerId'),
             lessonId: any(named: 'lessonId'),
             revisionId: any(named: 'revisionId'),
             questionId: any(named: 'questionId'),
@@ -147,7 +169,49 @@ void main() {
       act: (bloc) {
         bloc.add(const AnswerSelected(questionId: 'q1', optionId: 'opt_1c'));
       },
-      expect: () => [],
+      expect: () => [
+        QuizInProgress(
+          questions: sampleQuestions,
+          currentIndex: 0,
+          answers: const {'q1': 'opt_1c'},
+          revisionId: 'rev_1_0',
+          isSaving: true,
+          isSavedOffline: false,
+        ),
+        QuizInProgress(
+          questions: sampleQuestions,
+          currentIndex: 0,
+          answers: const {'q1': 'opt_1c'},
+          revisionId: 'rev_1_0',
+          isSaving: false,
+          isSavedOffline: true,
+        ),
+      ],
+      verify: (_) {
+        verify(
+          () => mockQuizRepository.saveAnswer(
+            learnerId: 'learner-a',
+            lessonId: 'provisional_lesson_1',
+            revisionId: 'rev_1_0',
+            questionId: 'q1',
+            optionId: 'opt_1c',
+            currentQuestionIndex: 0,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<QuizBloc, QuizState>(
+      'ResetQuiz resets state to QuizInitial and clears active draft session',
+      build: () => quizBloc,
+      seed: () => QuizInProgress(
+        questions: sampleQuestions,
+        currentIndex: 2,
+        answers: const {'q1': 'opt_1c'},
+        revisionId: 'rev_1_0',
+      ),
+      act: (bloc) => bloc.add(const ResetQuiz()),
+      expect: () => [const QuizInitial()],
     );
   });
 }

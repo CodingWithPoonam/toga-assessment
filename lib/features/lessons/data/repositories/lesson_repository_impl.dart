@@ -60,6 +60,27 @@ class LessonRepositoryImpl implements LessonRepository {
   }
 
   @override
+  Future<Lesson?> getLessonByRevision({
+    required String lessonId,
+    required String revisionId,
+  }) async {
+    // Check local durable cache for the specific pinned revision
+    final cached = await localDataSource.getLessonByRevision(
+      lessonId: lessonId,
+      revisionId: revisionId,
+    );
+    if (cached != null) return cached;
+
+    // Check remote/fixture
+    final remote = await fixtureDataSource.fetchLessonById(lessonId);
+    if (remote != null && remote.revisionId == revisionId) {
+      await cacheLesson(remote);
+      return remote.copyWith(isCached: true);
+    }
+    return null;
+  }
+
+  @override
   Future<void> cacheLesson(Lesson lesson) async {
     final model = LessonModel(
       id: lesson.id,
@@ -76,5 +97,16 @@ class LessonRepositoryImpl implements LessonRepository {
   @override
   Future<bool> isLessonCached(String lessonId) {
     return localDataSource.isLessonCached(lessonId);
+  }
+
+  @override
+  Future<bool> isRevisionCached({
+    required String lessonId,
+    required String revisionId,
+  }) {
+    return localDataSource.isRevisionCached(
+      lessonId: lessonId,
+      revisionId: revisionId,
+    );
   }
 }

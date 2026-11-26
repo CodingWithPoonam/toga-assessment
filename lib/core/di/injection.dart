@@ -129,7 +129,10 @@ Future<void> configureDependencies({
     () => LessonBloc(lessonRepository: getIt<LessonRepository>()),
   );
   getIt.registerFactory<QuizBloc>(
-    () => QuizBloc(quizRepository: getIt<QuizRepository>()),
+    () => QuizBloc(
+      quizRepository: getIt<QuizRepository>(),
+      sessionManager: getIt<ISessionManager>(),
+    ),
   );
 
   await getIt.allReady();

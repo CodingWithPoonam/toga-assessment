@@ -63,6 +63,35 @@ void main() {
       expect(lessons.first.id, equals('provisional_lesson_1'));
       expect(lessons.first.isCached, isTrue);
     });
+
+    test('retrieves lesson by specific revision ID', () async {
+      final lesson = await repository.getLessonByRevision(
+        lessonId: 'provisional_lesson_1',
+        revisionId: 'rev_1_0',
+      );
+      expect(lesson, isNotNull);
+      expect(lesson!.revisionId, equals('rev_1_0'));
+      expect(
+        await repository.isRevisionCached(
+          lessonId: 'provisional_lesson_1',
+          revisionId: 'rev_1_0',
+        ),
+        isTrue,
+      );
+
+      final nonExistent = await repository.getLessonByRevision(
+        lessonId: 'provisional_lesson_1',
+        revisionId: 'rev_9_9_unknown',
+      );
+      expect(nonExistent, isNull);
+      expect(
+        await repository.isRevisionCached(
+          lessonId: 'provisional_lesson_1',
+          revisionId: 'rev_9_9_unknown',
+        ),
+        isFalse,
+      );
+    });
   });
 }
 

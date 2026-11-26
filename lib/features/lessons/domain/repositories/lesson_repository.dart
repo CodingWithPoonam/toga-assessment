@@ -6,7 +6,17 @@ abstract class LessonRepository {
 
   Future<Lesson> getLessonById(String lessonId);
 
+  Future<Lesson?> getLessonByRevision({
+    required String lessonId,
+    required String revisionId,
+  });
+
   Future<void> cacheLesson(Lesson lesson);
 
   Future<bool> isLessonCached(String lessonId);
+
+  Future<bool> isRevisionCached({
+    required String lessonId,
+    required String revisionId,
+  });
 }

@@ -18,14 +18,18 @@ class QuizRepositoryImpl implements QuizRepository {
     required this.sessionManager,
   });
 
-  String _getVerifiedLearnerId() {
-    final learnerId = sessionManager.activeLearnerId;
-    if (learnerId == null || learnerId.isEmpty) {
+  void _validateLearnerSession(String learnerId) {
+    final activeLearnerId = sessionManager.activeLearnerId;
+    if (activeLearnerId == null || activeLearnerId.isEmpty) {
       throw const SecurityException(
         'Unverified learner session: activeLearnerId is null',
       );
     }
-    return learnerId;
+    if (activeLearnerId != learnerId) {
+      throw SecurityException(
+        'Tenant boundary violation: requested learnerId ($learnerId) does not match active session ($activeLearnerId)',
+      );
+    }
   }
 
   @override
@@ -38,20 +42,24 @@ class QuizRepositoryImpl implements QuizRepository {
   }
 
   @override
-  Future<QuizDraft?> getDraft(String lessonId) async {
-    final learnerId = _getVerifiedLearnerId();
+  Future<QuizDraft?> getDraft({
+    required String learnerId,
+    required String lessonId,
+  }) async {
+    _validateLearnerSession(learnerId);
     return localDataSource.getDraft(learnerId: learnerId, lessonId: lessonId);
   }
 
   @override
   Future<void> saveAnswer({
+    required String learnerId,
     required String lessonId,
     required String revisionId,
     required String questionId,
     required String optionId,
     required int currentQuestionIndex,
   }) async {
-    final learnerId = _getVerifiedLearnerId();
+    _validateLearnerSession(learnerId);
     await localDataSource.saveAnswerAtomically(
       learnerId: learnerId,
       lessonId: lessonId,
@@ -64,10 +72,11 @@ class QuizRepositoryImpl implements QuizRepository {
 
   @override
   Future<void> updatePosition({
+    required String learnerId,
     required String lessonId,
     required int currentQuestionIndex,
   }) async {
-    final learnerId = _getVerifiedLearnerId();
+    _validateLearnerSession(learnerId);
     await localDataSource.updatePosition(
       learnerId: learnerId,
       lessonId: lessonId,
@@ -76,8 +85,11 @@ class QuizRepositoryImpl implements QuizRepository {
   }
 
   @override
-  Future<void> clearDraft(String lessonId) async {
-    final learnerId = _getVerifiedLearnerId();
+  Future<void> clearDraft({
+    required String learnerId,
+    required String lessonId,
+  }) async {
+    _validateLearnerSession(learnerId);
     await localDataSource.clearDraft(learnerId: learnerId, lessonId: lessonId);
   }
 

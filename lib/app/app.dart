@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../core/di/injection.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/bloc/auth_event.dart';
+import '../features/auth/presentation/bloc/auth_state.dart';
 import '../features/lessons/presentation/bloc/lesson_bloc.dart';
 import '../features/quiz/presentation/bloc/quiz_bloc.dart';
+import '../features/quiz/presentation/bloc/quiz_event.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -38,6 +40,14 @@ class _TogaAppState extends State<TogaApp> {
   }
 
   @override
+  void dispose() {
+    _authBloc.close();
+    _lessonBloc.close();
+    _quizBloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
@@ -45,13 +55,21 @@ class _TogaAppState extends State<TogaApp> {
         BlocProvider<LessonBloc>.value(value: _lessonBloc),
         BlocProvider<QuizBloc>.value(value: _quizBloc),
       ],
-      child: MaterialApp.router(
-        title: 'AIRMAN TOGA',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        routerConfig: _router,
+      child: BlocListener<AuthBloc, AuthState>(
+        bloc: _authBloc,
+        listener: (context, authState) {
+          if (authState is AuthUnauthenticated || authState is AuthSwitching) {
+            _quizBloc.add(const ResetQuiz());
+          }
+        },
+        child: MaterialApp.router(
+          title: 'AIRMAN TOGA',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.system,
+          routerConfig: _router,
+        ),
       ),
     );
   }

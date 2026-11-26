@@ -10,11 +10,16 @@ abstract class QuizEvent extends Equatable {
 class StartQuiz extends QuizEvent {
   final String lessonId;
   final String revisionId;
+  final String? learnerId;
 
-  const StartQuiz({required this.lessonId, required this.revisionId});
+  const StartQuiz({
+    required this.lessonId,
+    required this.revisionId,
+    this.learnerId,
+  });
 
   @override
-  List<Object?> get props => [lessonId, revisionId];
+  List<Object?> get props => [lessonId, revisionId, learnerId];
 }
 
 class AnswerSelected extends QuizEvent {
@@ -51,4 +56,8 @@ class RevisionMismatchResolved extends QuizEvent {
 
   @override
   List<Object?> get props => [resetDraft];
+}
+
+class ResetQuiz extends QuizEvent {
+  const ResetQuiz();
 }

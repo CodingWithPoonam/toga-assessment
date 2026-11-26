@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toga_assessment/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:toga_assessment/features/auth/presentation/bloc/auth_state.dart';
 import '../bloc/quiz_bloc.dart';
 import '../bloc/quiz_event.dart';
 import '../bloc/quiz_state.dart';
@@ -23,8 +25,17 @@ class _QuizPageState extends State<QuizPage> {
   @override
   void initState() {
     super.initState();
+    final authState = context.read<AuthBloc>().state;
+    final learnerId = authState is AuthAuthenticated
+        ? authState.session.learnerId
+        : null;
+
     context.read<QuizBloc>().add(
-      StartQuiz(lessonId: widget.lessonId, revisionId: widget.revisionId),
+      StartQuiz(
+        lessonId: widget.lessonId,
+        revisionId: widget.revisionId,
+        learnerId: learnerId,
+      ),
     );
   }
 

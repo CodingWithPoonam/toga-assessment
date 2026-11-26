@@ -1141,17 +1141,6 @@ class $QuizAnswersTable extends QuizAnswers
       'REFERENCES quiz_drafts (id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _learnerIdMeta = const VerificationMeta(
-    'learnerId',
-  );
-  @override
-  late final GeneratedColumn<String> learnerId = GeneratedColumn<String>(
-    'learner_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _questionIdMeta = const VerificationMeta(
     'questionId',
   );
@@ -1189,7 +1178,6 @@ class $QuizAnswersTable extends QuizAnswers
   List<GeneratedColumn> get $columns => [
     id,
     draftId,
-    learnerId,
     questionId,
     encryptedSelectedOptionId,
     updatedAt,
@@ -1218,14 +1206,6 @@ class $QuizAnswersTable extends QuizAnswers
       );
     } else if (isInserting) {
       context.missing(_draftIdMeta);
-    }
-    if (data.containsKey('learner_id')) {
-      context.handle(
-        _learnerIdMeta,
-        learnerId.isAcceptableOrUnknown(data['learner_id']!, _learnerIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_learnerIdMeta);
     }
     if (data.containsKey('question_id')) {
       context.handle(
@@ -1275,10 +1255,6 @@ class $QuizAnswersTable extends QuizAnswers
         DriftSqlType.string,
         data['${effectivePrefix}draft_id'],
       )!,
-      learnerId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}learner_id'],
-      )!,
       questionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}question_id'],
@@ -1303,14 +1279,12 @@ class $QuizAnswersTable extends QuizAnswers
 class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
   final String id;
   final String draftId;
-  final String learnerId;
   final String questionId;
   final String encryptedSelectedOptionId;
   final DateTime updatedAt;
   const QuizAnswer({
     required this.id,
     required this.draftId,
-    required this.learnerId,
     required this.questionId,
     required this.encryptedSelectedOptionId,
     required this.updatedAt,
@@ -1320,7 +1294,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['draft_id'] = Variable<String>(draftId);
-    map['learner_id'] = Variable<String>(learnerId);
     map['question_id'] = Variable<String>(questionId);
     map['encrypted_selected_option_id'] = Variable<String>(
       encryptedSelectedOptionId,
@@ -1333,7 +1306,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     return QuizAnswersCompanion(
       id: Value(id),
       draftId: Value(draftId),
-      learnerId: Value(learnerId),
       questionId: Value(questionId),
       encryptedSelectedOptionId: Value(encryptedSelectedOptionId),
       updatedAt: Value(updatedAt),
@@ -1348,7 +1320,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     return QuizAnswer(
       id: serializer.fromJson<String>(json['id']),
       draftId: serializer.fromJson<String>(json['draftId']),
-      learnerId: serializer.fromJson<String>(json['learnerId']),
       questionId: serializer.fromJson<String>(json['questionId']),
       encryptedSelectedOptionId: serializer.fromJson<String>(
         json['encryptedSelectedOptionId'],
@@ -1362,7 +1333,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'draftId': serializer.toJson<String>(draftId),
-      'learnerId': serializer.toJson<String>(learnerId),
       'questionId': serializer.toJson<String>(questionId),
       'encryptedSelectedOptionId': serializer.toJson<String>(
         encryptedSelectedOptionId,
@@ -1374,14 +1344,12 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
   QuizAnswer copyWith({
     String? id,
     String? draftId,
-    String? learnerId,
     String? questionId,
     String? encryptedSelectedOptionId,
     DateTime? updatedAt,
   }) => QuizAnswer(
     id: id ?? this.id,
     draftId: draftId ?? this.draftId,
-    learnerId: learnerId ?? this.learnerId,
     questionId: questionId ?? this.questionId,
     encryptedSelectedOptionId:
         encryptedSelectedOptionId ?? this.encryptedSelectedOptionId,
@@ -1391,7 +1359,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     return QuizAnswer(
       id: data.id.present ? data.id.value : this.id,
       draftId: data.draftId.present ? data.draftId.value : this.draftId,
-      learnerId: data.learnerId.present ? data.learnerId.value : this.learnerId,
       questionId: data.questionId.present
           ? data.questionId.value
           : this.questionId,
@@ -1407,7 +1374,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
     return (StringBuffer('QuizAnswer(')
           ..write('id: $id, ')
           ..write('draftId: $draftId, ')
-          ..write('learnerId: $learnerId, ')
           ..write('questionId: $questionId, ')
           ..write('encryptedSelectedOptionId: $encryptedSelectedOptionId, ')
           ..write('updatedAt: $updatedAt')
@@ -1419,7 +1385,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
   int get hashCode => Object.hash(
     id,
     draftId,
-    learnerId,
     questionId,
     encryptedSelectedOptionId,
     updatedAt,
@@ -1430,7 +1395,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
       (other is QuizAnswer &&
           other.id == this.id &&
           other.draftId == this.draftId &&
-          other.learnerId == this.learnerId &&
           other.questionId == this.questionId &&
           other.encryptedSelectedOptionId == this.encryptedSelectedOptionId &&
           other.updatedAt == this.updatedAt);
@@ -1439,7 +1403,6 @@ class QuizAnswer extends DataClass implements Insertable<QuizAnswer> {
 class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
   final Value<String> id;
   final Value<String> draftId;
-  final Value<String> learnerId;
   final Value<String> questionId;
   final Value<String> encryptedSelectedOptionId;
   final Value<DateTime> updatedAt;
@@ -1447,7 +1410,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
   const QuizAnswersCompanion({
     this.id = const Value.absent(),
     this.draftId = const Value.absent(),
-    this.learnerId = const Value.absent(),
     this.questionId = const Value.absent(),
     this.encryptedSelectedOptionId = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1456,21 +1418,18 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
   QuizAnswersCompanion.insert({
     required String id,
     required String draftId,
-    required String learnerId,
     required String questionId,
     required String encryptedSelectedOptionId,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        draftId = Value(draftId),
-       learnerId = Value(learnerId),
        questionId = Value(questionId),
        encryptedSelectedOptionId = Value(encryptedSelectedOptionId),
        updatedAt = Value(updatedAt);
   static Insertable<QuizAnswer> custom({
     Expression<String>? id,
     Expression<String>? draftId,
-    Expression<String>? learnerId,
     Expression<String>? questionId,
     Expression<String>? encryptedSelectedOptionId,
     Expression<DateTime>? updatedAt,
@@ -1479,7 +1438,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (draftId != null) 'draft_id': draftId,
-      if (learnerId != null) 'learner_id': learnerId,
       if (questionId != null) 'question_id': questionId,
       if (encryptedSelectedOptionId != null)
         'encrypted_selected_option_id': encryptedSelectedOptionId,
@@ -1491,7 +1449,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
   QuizAnswersCompanion copyWith({
     Value<String>? id,
     Value<String>? draftId,
-    Value<String>? learnerId,
     Value<String>? questionId,
     Value<String>? encryptedSelectedOptionId,
     Value<DateTime>? updatedAt,
@@ -1500,7 +1457,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
     return QuizAnswersCompanion(
       id: id ?? this.id,
       draftId: draftId ?? this.draftId,
-      learnerId: learnerId ?? this.learnerId,
       questionId: questionId ?? this.questionId,
       encryptedSelectedOptionId:
           encryptedSelectedOptionId ?? this.encryptedSelectedOptionId,
@@ -1517,9 +1473,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
     }
     if (draftId.present) {
       map['draft_id'] = Variable<String>(draftId.value);
-    }
-    if (learnerId.present) {
-      map['learner_id'] = Variable<String>(learnerId.value);
     }
     if (questionId.present) {
       map['question_id'] = Variable<String>(questionId.value);
@@ -1543,7 +1496,6 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
     return (StringBuffer('QuizAnswersCompanion(')
           ..write('id: $id, ')
           ..write('draftId: $draftId, ')
-          ..write('learnerId: $learnerId, ')
           ..write('questionId: $questionId, ')
           ..write('encryptedSelectedOptionId: $encryptedSelectedOptionId, ')
           ..write('updatedAt: $updatedAt, ')
@@ -2315,7 +2267,6 @@ typedef $$QuizAnswersTableCreateCompanionBuilder =
     QuizAnswersCompanion Function({
       required String id,
       required String draftId,
-      required String learnerId,
       required String questionId,
       required String encryptedSelectedOptionId,
       required DateTime updatedAt,
@@ -2325,7 +2276,6 @@ typedef $$QuizAnswersTableUpdateCompanionBuilder =
     QuizAnswersCompanion Function({
       Value<String> id,
       Value<String> draftId,
-      Value<String> learnerId,
       Value<String> questionId,
       Value<String> encryptedSelectedOptionId,
       Value<DateTime> updatedAt,
@@ -2365,11 +2315,6 @@ class $$QuizAnswersTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get learnerId => $composableBuilder(
-    column: $table.learnerId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2426,11 +2371,6 @@ class $$QuizAnswersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get learnerId => $composableBuilder(
-    column: $table.learnerId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get questionId => $composableBuilder(
     column: $table.questionId,
     builder: (column) => ColumnOrderings(column),
@@ -2481,9 +2421,6 @@ class $$QuizAnswersTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get learnerId =>
-      $composableBuilder(column: $table.learnerId, builder: (column) => column);
 
   GeneratedColumn<String> get questionId => $composableBuilder(
     column: $table.questionId,
@@ -2552,7 +2489,6 @@ class $$QuizAnswersTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> draftId = const Value.absent(),
-                Value<String> learnerId = const Value.absent(),
                 Value<String> questionId = const Value.absent(),
                 Value<String> encryptedSelectedOptionId = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -2560,7 +2496,6 @@ class $$QuizAnswersTableTableManager
               }) => QuizAnswersCompanion(
                 id: id,
                 draftId: draftId,
-                learnerId: learnerId,
                 questionId: questionId,
                 encryptedSelectedOptionId: encryptedSelectedOptionId,
                 updatedAt: updatedAt,
@@ -2570,7 +2505,6 @@ class $$QuizAnswersTableTableManager
               ({
                 required String id,
                 required String draftId,
-                required String learnerId,
                 required String questionId,
                 required String encryptedSelectedOptionId,
                 required DateTime updatedAt,
@@ -2578,7 +2512,6 @@ class $$QuizAnswersTableTableManager
               }) => QuizAnswersCompanion.insert(
                 id: id,
                 draftId: draftId,
-                learnerId: learnerId,
                 questionId: questionId,
                 encryptedSelectedOptionId: encryptedSelectedOptionId,
                 updatedAt: updatedAt,

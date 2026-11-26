@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:toga_assessment/core/database/app_database.dart';
+import 'package:toga_assessment/core/errors/exceptions.dart';
 import 'package:toga_assessment/core/security/encryption_service.dart';
 import 'package:toga_assessment/core/security/secure_storage.dart';
 import 'package:toga_assessment/core/security/session_manager.dart';
@@ -71,6 +72,7 @@ void main() {
       'saves answer with encryption and retrieves decrypted answer',
       () async {
         await repository.saveAnswer(
+          learnerId: 'learner-a',
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
           questionId: 'q1',
@@ -78,7 +80,10 @@ void main() {
           currentQuestionIndex: 0,
         );
 
-        final draft = await repository.getDraft('provisional_lesson_1');
+        final draft = await repository.getDraft(
+          learnerId: 'learner-a',
+          lessonId: 'provisional_lesson_1',
+        );
         expect(draft, isNotNull);
         expect(draft!.learnerId, equals('learner-a'));
         expect(draft.answers['q1'], equals('opt_1c'));
@@ -98,6 +103,7 @@ void main() {
       () async {
         // 1. Learner A answers Q1 with opt_1c
         await repository.saveAnswer(
+          learnerId: 'learner-a',
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
           questionId: 'q1',
@@ -113,11 +119,15 @@ void main() {
         );
 
         // Verify Learner B has NO draft yet
-        final draftBInitial = await repository.getDraft('provisional_lesson_1');
+        final draftBInitial = await repository.getDraft(
+          learnerId: 'learner-b',
+          lessonId: 'provisional_lesson_1',
+        );
         expect(draftBInitial, isNull);
 
         // 3. Learner B answers Q1 with opt_1a
         await repository.saveAnswer(
+          learnerId: 'learner-b',
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
           questionId: 'q1',
@@ -125,7 +135,10 @@ void main() {
           currentQuestionIndex: 0,
         );
 
-        final draftB = await repository.getDraft('provisional_lesson_1');
+        final draftB = await repository.getDraft(
+          learnerId: 'learner-b',
+          lessonId: 'provisional_lesson_1',
+        );
         expect(draftB!.learnerId, equals('learner-b'));
         expect(draftB.answers['q1'], equals('opt_1a'));
 
@@ -136,7 +149,10 @@ void main() {
           refreshToken: 'refresh_a',
         );
 
-        final draftA = await repository.getDraft('provisional_lesson_1');
+        final draftA = await repository.getDraft(
+          learnerId: 'learner-a',
+          lessonId: 'provisional_lesson_1',
+        );
         expect(draftA!.learnerId, equals('learner-a'));
         expect(draftA.answers['q1'], equals('opt_1c'));
       },
@@ -147,6 +163,7 @@ void main() {
       () async {
         // Step 1-6: Answer Q1, Answer Q2, navigate to Q3
         await repository.saveAnswer(
+          learnerId: 'learner-a',
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
           questionId: 'q1',
@@ -154,6 +171,7 @@ void main() {
           currentQuestionIndex: 0,
         );
         await repository.saveAnswer(
+          learnerId: 'learner-a',
           lessonId: 'provisional_lesson_1',
           revisionId: 'rev_1_0',
           questionId: 'q2',
@@ -161,6 +179,7 @@ void main() {
           currentQuestionIndex: 1,
         );
         await repository.updatePosition(
+          learnerId: 'learner-a',
           lessonId: 'provisional_lesson_1',
           currentQuestionIndex: 2, // Position Q3
         );
@@ -173,12 +192,33 @@ void main() {
         );
 
         // Step 10-11: Restore draft and verify state
-        final restored = await newRepository.getDraft('provisional_lesson_1');
+        final restored = await newRepository.getDraft(
+          learnerId: 'learner-a',
+          lessonId: 'provisional_lesson_1',
+        );
         expect(restored, isNotNull);
         expect(restored!.revisionId, equals('rev_1_0'));
         expect(restored.currentQuestionIndex, equals(2));
         expect(restored.answers['q1'], equals('opt_1c'));
         expect(restored.answers['q2'], equals('opt_2b'));
+      },
+    );
+
+    test(
+      'Rejects operation if learnerId does not match active session',
+      () async {
+        // Active session is learner-a, attempt to save answer for learner-b
+        expect(
+          () => repository.saveAnswer(
+            learnerId: 'learner-b',
+            lessonId: 'provisional_lesson_1',
+            revisionId: 'rev_1_0',
+            questionId: 'q1',
+            optionId: 'opt_1c',
+            currentQuestionIndex: 0,
+          ),
+          throwsA(isA<SecurityException>()),
+        );
       },
     );
 

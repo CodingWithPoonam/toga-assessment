@@ -6,9 +6,9 @@ import 'secure_storage.dart';
 
 /// Contract for data encryption, decryption, and key lifecycle management
 abstract class IEncryptionService {
-  Future<String> encrypt(String plainText);
-  Future<String> decrypt(String cipherText);
-  Future<List<int>> getOrCreateKey();
+  Future<String> encrypt({required String plainText, String? associatedData});
+
+  Future<String> decrypt({required String cipherText, String? associatedData});
 }
 
 /// AES-GCM 256-bit authenticated encryption service
@@ -21,8 +21,9 @@ class AesGcmEncryptionService implements IEncryptionService {
   AesGcmEncryptionService({required this.secureStorage, AesGcm? algorithm})
     : _algorithm = algorithm ?? AesGcm.with256bits();
 
-  @override
-  Future<List<int>> getOrCreateKey() async {
+  Future<List<int>> getOrCreateKey() => _getOrCreateKey();
+
+  Future<List<int>> _getOrCreateKey() async {
     final existingKeyBase64 = await secureStorage.read(
       AppConstants.encryptionKeyAlias,
     );
@@ -45,20 +46,27 @@ class AesGcmEncryptionService implements IEncryptionService {
 
   Future<SecretKey> _getSecretKey() async {
     if (_cachedKey != null) return _cachedKey!;
-    final keyBytes = await getOrCreateKey();
+    final keyBytes = await _getOrCreateKey();
     _cachedKey = SecretKey(keyBytes);
     return _cachedKey!;
   }
 
   @override
-  Future<String> encrypt(String plainText) async {
+  Future<String> encrypt({
+    required String plainText,
+    String? associatedData,
+  }) async {
     try {
       final secretKey = await _getSecretKey();
       final nonce = _algorithm.newNonce();
+      final aadBytes = associatedData != null
+          ? utf8.encode(associatedData)
+          : const <int>[];
       final secretBox = await _algorithm.encrypt(
         utf8.encode(plainText),
         secretKey: secretKey,
         nonce: nonce,
+        aad: aadBytes,
       );
 
       final packed = secretBox.concatenation(nonce: true, mac: true);
@@ -69,7 +77,10 @@ class AesGcmEncryptionService implements IEncryptionService {
   }
 
   @override
-  Future<String> decrypt(String cipherText) async {
+  Future<String> decrypt({
+    required String cipherText,
+    String? associatedData,
+  }) async {
     try {
       final secretKey = await _getSecretKey();
       final packed = base64Decode(cipherText);
@@ -80,9 +91,13 @@ class AesGcmEncryptionService implements IEncryptionService {
         macLength: _algorithm.macAlgorithm.macLength,
       );
 
+      final aadBytes = associatedData != null
+          ? utf8.encode(associatedData)
+          : const <int>[];
       final clearBytes = await _algorithm.decrypt(
         secretBox,
         secretKey: secretKey,
+        aad: aadBytes,
       );
 
       return utf8.decode(clearBytes);
