@@ -1,25 +1,27 @@
 import 'package:get_it/get_it.dart';
+import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../database/app_database.dart';
 import '../network/auth_interceptor.dart';
 import '../network/dio_client.dart';
 import '../network/network_config.dart';
 import '../security/encryption_service.dart';
 import '../security/secure_storage.dart';
+import '../security/session_manager.dart';
 
 final GetIt getIt = GetIt.instance;
 
 /// Central dependency injection registration
-/// Dependencies are initialized in strict dependency order:
-/// 1. Security and local persistence
-/// 2. Networking and interceptors
-/// 3. Repositories and domain use cases (future phases)
-/// 4. Presentation BLoCs (future phases)
 Future<void> configureDependencies({
   NetworkConfig? networkConfig,
   ISecureStorage? secureStorageOverride,
   AppDatabase? databaseOverride,
+  ISessionManager? sessionManagerOverride,
+  AuthRemoteDataSource? remoteDataSourceOverride,
+  AuthRepository? authRepositoryOverride,
 }) async {
-  // Reset existing registrations for test environments
   if (getIt.isRegistered<NetworkConfig>()) {
     await getIt.reset();
   }
@@ -37,15 +39,20 @@ Future<void> configureDependencies({
     () => AesGcmEncryptionService(secureStorage: getIt<ISecureStorage>()),
   );
 
+  final sessionManager =
+      sessionManagerOverride ??
+      SessionManager(secureStorage: getIt<ISecureStorage>());
+  getIt.registerSingleton<ISessionManager>(sessionManager);
+
   // 3. Database Foundation
   final database = databaseOverride ?? AppDatabase();
   getIt.registerSingleton<AppDatabase>(database);
 
   // 4. Network Foundation
-  // In-memory token provider for AuthInterceptor (Phase 2 hooks)
+  // Token provider fetches memory-held access token from SessionManager
   getIt.registerLazySingleton<AuthInterceptor>(
     () => AuthInterceptor(
-      accessTokenProvider: () => null, // Memory token holder in Phase 2
+      accessTokenProvider: () => getIt<ISessionManager>().accessToken,
     ),
   );
 
@@ -56,6 +63,23 @@ Future<void> configureDependencies({
     ),
   );
 
-  // Ready signal for async registrations if needed
+  // 5. Auth Data & Domain
+  final remoteDataSource =
+      remoteDataSourceOverride ?? MockAuthRemoteDataSource();
+  getIt.registerSingleton<AuthRemoteDataSource>(remoteDataSource);
+
+  final authRepository =
+      authRepositoryOverride ??
+      AuthRepositoryImpl(
+        remoteDataSource: getIt<AuthRemoteDataSource>(),
+        sessionManager: getIt<ISessionManager>(),
+      );
+  getIt.registerSingleton<AuthRepository>(authRepository);
+
+  // 6. Presentation BLoCs
+  getIt.registerFactory<AuthBloc>(
+    () => AuthBloc(authRepository: getIt<AuthRepository>()),
+  );
+
   await getIt.allReady();
 }

@@ -34,20 +34,17 @@ void main() {
     );
   });
 
-  testWidgets('TogaApp renders AppFoundationScreen with architecture status', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const TogaApp());
-    await tester.pumpAndSettle();
+  testWidgets(
+    'TogaApp initializes and routes unauthenticated user to LoginPage',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const TogaApp());
+      await tester.pumpAndSettle();
 
-    expect(find.text('AIRMAN TOGA'), findsOneWidget);
-    expect(find.text('Phase 1: Project Foundation'), findsOneWidget);
-    expect(find.text('State Management & UI'), findsOneWidget);
-    expect(find.text('Dependency Injection'), findsOneWidget);
-    expect(find.text('Networking Foundation'), findsOneWidget);
-
-    // Scroll to verify lower items
-    await tester.scrollUntilVisible(find.text('Navigation'), 100);
-    expect(find.text('Navigation'), findsOneWidget);
-  });
+      expect(find.text('AIRMAN TOGA Login'), findsOneWidget);
+      expect(find.text('Synthetic Learner Access'), findsOneWidget);
+      expect(find.text('Alex Mercer (Learner A)'), findsOneWidget);
+      expect(find.text('Blake Vance (Learner B)'), findsOneWidget);
+      expect(find.text('Authenticate & Enter'), findsOneWidget);
+    },
+  );
 }

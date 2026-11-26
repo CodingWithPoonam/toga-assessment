@@ -1,5 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/domain/entities/auth_session.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/auth/presentation/bloc/auth_event.dart';
+import '../../features/auth/presentation/bloc/auth_state.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
 
 /// Route path constants
 abstract class AppRoutes {
@@ -14,169 +22,273 @@ abstract class AppRoutes {
   static String quizPath(String lessonId) => '/quiz/$lessonId';
 }
 
-/// GoRouter configuration for application navigation
-/// Routes are defined here and prepared for session guards in Phase 2
-final GoRouter appRouter = GoRouter(
-  initialLocation: AppRoutes.home,
-  debugLogDiagnostics: false,
-  routes: [
-    GoRoute(
-      path: AppRoutes.home,
-      name: 'home',
-      builder: (context, state) => const AppFoundationScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.login,
-      name: 'login',
-      builder: (context, state) => const _PlaceholderScreen(
-        title: 'Authentication',
-        description: 'Login screen placeholder (Phase 2)',
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.lessons,
-      name: 'lessons',
-      builder: (context, state) => const _PlaceholderScreen(
-        title: 'Lessons',
-        description: 'Lessons catalogue placeholder (Phase 3)',
-      ),
-      routes: [
-        GoRoute(
-          path: ':lessonId',
-          name: 'lessonDetail',
-          builder: (context, state) {
-            final lessonId = state.pathParameters['lessonId'] ?? '';
-            return _PlaceholderScreen(
-              title: 'Lesson Detail',
-              description: 'Detail view for lesson $lessonId',
-            );
-          },
-        ),
-      ],
-    ),
-    GoRoute(
-      path: AppRoutes.quiz,
-      name: 'quiz',
-      builder: (context, state) {
-        final lessonId = state.pathParameters['lessonId'] ?? '';
-        return _PlaceholderScreen(
-          title: 'Quiz',
-          description: 'Quiz workflow for lesson $lessonId (Phase 4)',
-        );
-      },
-    ),
-    GoRoute(
-      path: AppRoutes.submission,
-      name: 'submission',
-      builder: (context, state) => const _PlaceholderScreen(
-        title: 'Submissions',
-        description: 'Outbox submission sync status (Phase 5)',
-      ),
-    ),
-  ],
-);
+/// Listenable bridge syncing AuthBloc state changes with GoRouter
+class AuthRouterNotifier extends ChangeNotifier {
+  final AuthBloc _authBloc;
+  late final StreamSubscription<AuthState> _subscription;
 
-/// Foundational home screen indicating initialized layers and readiness
-class AppFoundationScreen extends StatelessWidget {
-  const AppFoundationScreen({super.key});
+  AuthRouterNotifier(this._authBloc) {
+    _subscription = _authBloc.stream.listen((_) => notifyListeners());
+  }
+
+  AuthState get authState => _authBloc.state;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+/// Creates GoRouter configured with authentication guards
+GoRouter createAppRouter(AuthBloc authBloc) {
+  final authNotifier = AuthRouterNotifier(authBloc);
+
+  return GoRouter(
+    initialLocation: AppRoutes.lessons,
+    refreshListenable: authNotifier,
+    redirect: (context, state) {
+      final authState = authNotifier.authState;
+      final isAuthenticated = authState is AuthAuthenticated;
+      final isLoggingIn = state.matchedLocation == AppRoutes.login;
+
+      // Allow loading / initial states without premature redirection
+      if (authState is AuthInitial ||
+          authState is AuthLoading ||
+          authState is AuthSwitching) {
+        return null;
+      }
+
+      // Guard: Unauthenticated users attempting to access private routes
+      if (!isAuthenticated && !isLoggingIn) {
+        return AppRoutes.login;
+      }
+
+      // Guard: Authenticated users should not stay on the login page
+      if (isAuthenticated && isLoggingIn) {
+        return AppRoutes.lessons;
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: AppRoutes.login,
+        name: 'login',
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.lessons,
+        name: 'lessons',
+        builder: (context, state) => const LessonsCataloguePlaceholderScreen(),
+        routes: [
+          GoRoute(
+            path: ':lessonId',
+            name: 'lessonDetail',
+            builder: (context, state) {
+              final lessonId = state.pathParameters['lessonId'] ?? '';
+              return _PlaceholderScreen(
+                title: 'Lesson Detail',
+                description: 'Detail view for lesson $lessonId (Phase 3)',
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.quiz,
+        name: 'quiz',
+        builder: (context, state) {
+          final lessonId = state.pathParameters['lessonId'] ?? '';
+          return _PlaceholderScreen(
+            title: 'Quiz',
+            description: 'Quiz workflow for lesson $lessonId (Phase 4)',
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.submission,
+        name: 'submission',
+        builder: (context, state) => const _PlaceholderScreen(
+          title: 'Submissions',
+          description: 'Outbox submission sync status (Phase 5)',
+        ),
+      ),
+    ],
+  );
+}
+
+/// Interactive lessons catalogue placeholder displaying authenticated session info,
+/// learner switching, and logout capabilities
+class LessonsCataloguePlaceholderScreen extends StatelessWidget {
+  const LessonsCataloguePlaceholderScreen({super.key});
+
+  void _showAccountSwitchDialog(BuildContext context, AuthSession? session) {
+    final currentLearnerId = session?.learnerId;
+    final targetLearner = currentLearnerId == SyntheticLearners.learnerA.id
+        ? SyntheticLearners.learnerB
+        : SyntheticLearners.learnerA;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Switch Learner Account'),
+        content: Text(
+          'Switch active session to ${targetLearner.displayName}? '
+          'Pending progress from the current session will remain securely isolated.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<AuthBloc>().add(
+                SwitchLearnerRequested(
+                  targetLearnerId: targetLearner.id,
+                  password: SyntheticLearners.validPassword,
+                ),
+              );
+            },
+            child: const Text('Confirm Switch'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text(
+          'Logging out will terminate the active session and remove tokens from memory. '
+          'Protected drafts remain safely stored for your account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<AuthBloc>().add(const LogoutRequested());
+            },
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('AIRMAN TOGA')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            Card(
-              color: colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Phase 1: Project Foundation',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Architecture setup complete. Core infrastructure, dependency injection, '
-                      'networking, database, security, and router are initialized.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final session = state is AuthAuthenticated ? state.session : null;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Lessons Catalogue'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.swap_horiz_outlined),
+                tooltip: 'Switch Learner',
+                onPressed: () => _showAccountSwitchDialog(context, session),
               ),
+              IconButton(
+                icon: const Icon(Icons.logout_outlined),
+                tooltip: 'Logout',
+                onPressed: () => _showLogoutConfirmation(context),
+              ),
+            ],
+          ),
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                Card(
+                  color: colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              child: Text(
+                                session?.learner.displayName.substring(0, 1) ??
+                                    'L',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    session?.learner.displayName ??
+                                        'Authenticated Learner',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onPrimaryContainer,
+                                        ),
+                                  ),
+                                  Text(
+                                    session?.learner.email ?? '',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        Text(
+                          'Session Generation: ${session?.sessionGeneration ?? 1}',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        Text(
+                          'Offline Lease Valid Until: ${session?.offlineLeaseExpiresAt.toLocal().toString().substring(0, 16) ?? '24 Hours'}',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Card(
+                  child: ListTile(
+                    leading: Icon(Icons.menu_book_outlined),
+                    title: Text('Phase 2 Completed'),
+                    subtitle: Text(
+                      'Authentication, session management, and route guards are verified. '
+                      'Lessons feature will be built in Phase 3.',
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const _ArchitectureLayerTile(
-              title: 'State Management & UI',
-              subtitle: 'flutter_bloc, Clean Architecture, Material 3',
-              icon: Icons.layers_outlined,
-            ),
-            const _ArchitectureLayerTile(
-              title: 'Dependency Injection',
-              subtitle: 'GetIt modular registry with lifecycle separation',
-              icon: Icons.alt_route_outlined,
-            ),
-            const _ArchitectureLayerTile(
-              title: 'Networking Foundation',
-              subtitle: 'Dio client with standardized error mapping & timeouts',
-              icon: Icons.cloud_outlined,
-            ),
-            const _ArchitectureLayerTile(
-              title: 'Local Persistence',
-              subtitle: 'Drift SQLite boundary with migration support',
-              icon: Icons.storage_outlined,
-            ),
-            const _ArchitectureLayerTile(
-              title: 'Security Foundation',
-              subtitle:
-                  'AES-GCM-256 authenticated encryption & secure key storage',
-              icon: Icons.security_outlined,
-            ),
-            const _ArchitectureLayerTile(
-              title: 'Navigation',
-              subtitle:
-                  'GoRouter with typed path parameters & route guards ready',
-              icon: Icons.navigation_outlined,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ArchitectureLayerTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _ArchitectureLayerTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
-      ),
+          ),
+        );
+      },
     );
   }
 }
