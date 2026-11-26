@@ -9,6 +9,8 @@ class QuizDrafts extends Table {
   IntColumn get currentQuestionIndex =>
       integer().withDefault(const Constant(0))();
   BoolColumn get isSubmitted => boolean().withDefault(const Constant(false))();
+  TextColumn get draftStatus =>
+      text().withDefault(const Constant('in_progress'))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

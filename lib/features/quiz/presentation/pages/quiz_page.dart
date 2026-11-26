@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:toga_assessment/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:toga_assessment/features/auth/presentation/bloc/auth_state.dart';
+import 'package:toga_assessment/features/sync/presentation/bloc/sync_bloc.dart';
+import 'package:toga_assessment/features/sync/presentation/bloc/sync_event.dart';
+import 'package:toga_assessment/features/sync/presentation/bloc/sync_state.dart';
 import '../bloc/quiz_bloc.dart';
 import '../bloc/quiz_event.dart';
 import '../bloc/quiz_state.dart';
@@ -82,52 +85,84 @@ class _QuizPageState extends State<QuizPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return BlocConsumer<QuizBloc, QuizState>(
-      listener: (context, state) {
-        if (state is QuizRevisionMismatch) {
-          _showRevisionMismatchDialog(context, state);
-        }
-      },
-      builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Lesson Quiz'),
-            actions: [
-              if (state is QuizInProgress) ...[
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        state.isSaving
-                            ? Icons.sync
-                            : (state.isSavedOffline
-                                  ? Icons.cloud_done_outlined
-                                  : Icons.cloud_off_outlined),
-                        size: 18,
-                        color: state.isSaving
-                            ? colorScheme.primary
-                            : Colors.green,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        state.isSaving
-                            ? 'Saving...'
-                            : (state.isSavedOffline
-                                  ? 'Draft saved'
-                                  : 'Unsaved'),
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
+    return BlocListener<SyncBloc, SyncState>(
+      listener: (context, syncState) {
+        if (syncState is SyncSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.green,
+              content: Text(
+                'Quiz attempt confirmed and acknowledged by server!',
+              ),
+            ),
+          );
+        } else if (syncState is SyncTransientFailure) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(syncState.message)));
+        } else if (syncState is SyncBlocked) {
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Submission Blocked'),
+              content: Text(syncState.reason),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
                 ),
               ],
-            ],
-          ),
-          body: _buildBody(context, state),
-        );
+            ),
+          );
+        }
       },
+      child: BlocConsumer<QuizBloc, QuizState>(
+        listener: (context, state) {
+          if (state is QuizRevisionMismatch) {
+            _showRevisionMismatchDialog(context, state);
+          }
+        },
+        builder: (context, state) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Lesson Quiz'),
+              actions: [
+                if (state is QuizInProgress) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          state.isSaving
+                              ? Icons.sync
+                              : (state.isSavedOffline
+                                    ? Icons.cloud_done_outlined
+                                    : Icons.cloud_off_outlined),
+                          size: 18,
+                          color: state.isSaving
+                              ? colorScheme.primary
+                              : Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          state.isSaving
+                              ? 'Saving...'
+                              : (state.isSavedOffline
+                                    ? 'Draft saved'
+                                    : 'Unsaved'),
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            body: _buildBody(context, state),
+          );
+        },
+      ),
     );
   }
 
@@ -335,17 +370,45 @@ class _QuizPageState extends State<QuizPage> {
                       label: const Text('Next'),
                     )
                   else
-                    FilledButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Quiz progress saved offline. Final submission sync will be enabled in Phase 3B.',
-                            ),
+                    BlocBuilder<SyncBloc, SyncState>(
+                      builder: (context, syncState) {
+                        final isSyncing =
+                            syncState is SyncStaging ||
+                            syncState is SyncInFlight;
+                        return FilledButton.icon(
+                          onPressed: isSyncing
+                              ? null
+                              : () {
+                                  final authState = context
+                                      .read<AuthBloc>()
+                                      .state;
+                                  final learnerId =
+                                      authState is AuthAuthenticated
+                                      ? authState.session.learnerId
+                                      : null;
+                                  if (learnerId != null) {
+                                    context.read<SyncBloc>().add(
+                                      StageAndSyncRequested(
+                                        learnerId: learnerId,
+                                        lessonId: widget.lessonId,
+                                      ),
+                                    );
+                                  }
+                                },
+                          icon: isSyncing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.cloud_upload_outlined),
+                          label: Text(
+                            isSyncing ? 'Submitting...' : 'Submit Attempt',
                           ),
                         );
                       },
-                      child: const Text('Review & Save'),
                     ),
                 ],
               ),

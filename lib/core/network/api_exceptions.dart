@@ -23,6 +23,7 @@ class ApiException extends AppException {
         if (statusCode == 401) return UnauthorizedException(message);
         if (statusCode == 403) return ForbiddenException(message);
         if (statusCode == 404) return NotFoundException(message);
+        if (statusCode == 409) return ConflictException(message);
         if (statusCode != null && statusCode >= 500) {
           return InternalServerErrorException(message, statusCode: statusCode);
         }
@@ -67,6 +68,10 @@ class ForbiddenException extends ApiException {
 
 class NotFoundException extends ApiException {
   NotFoundException(super.message) : super(statusCode: 404);
+}
+
+class ConflictException extends ApiException {
+  ConflictException(super.message) : super(statusCode: 409);
 }
 
 class InternalServerErrorException extends ApiException {

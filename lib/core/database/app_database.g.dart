@@ -705,6 +705,18 @@ class $QuizDraftsTable extends QuizDrafts
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _draftStatusMeta = const VerificationMeta(
+    'draftStatus',
+  );
+  @override
+  late final GeneratedColumn<String> draftStatus = GeneratedColumn<String>(
+    'draft_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('in_progress'),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -724,6 +736,7 @@ class $QuizDraftsTable extends QuizDrafts
     revisionId,
     currentQuestionIndex,
     isSubmitted,
+    draftStatus,
     updatedAt,
   ];
   @override
@@ -785,6 +798,15 @@ class $QuizDraftsTable extends QuizDrafts
         ),
       );
     }
+    if (data.containsKey('draft_status')) {
+      context.handle(
+        _draftStatusMeta,
+        draftStatus.isAcceptableOrUnknown(
+          data['draft_status']!,
+          _draftStatusMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -830,6 +852,10 @@ class $QuizDraftsTable extends QuizDrafts
         DriftSqlType.bool,
         data['${effectivePrefix}is_submitted'],
       )!,
+      draftStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}draft_status'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -850,6 +876,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
   final String revisionId;
   final int currentQuestionIndex;
   final bool isSubmitted;
+  final String draftStatus;
   final DateTime updatedAt;
   const QuizDraft({
     required this.id,
@@ -858,6 +885,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
     required this.revisionId,
     required this.currentQuestionIndex,
     required this.isSubmitted,
+    required this.draftStatus,
     required this.updatedAt,
   });
   @override
@@ -869,6 +897,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
     map['revision_id'] = Variable<String>(revisionId);
     map['current_question_index'] = Variable<int>(currentQuestionIndex);
     map['is_submitted'] = Variable<bool>(isSubmitted);
+    map['draft_status'] = Variable<String>(draftStatus);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -881,6 +910,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
       revisionId: Value(revisionId),
       currentQuestionIndex: Value(currentQuestionIndex),
       isSubmitted: Value(isSubmitted),
+      draftStatus: Value(draftStatus),
       updatedAt: Value(updatedAt),
     );
   }
@@ -899,6 +929,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
         json['currentQuestionIndex'],
       ),
       isSubmitted: serializer.fromJson<bool>(json['isSubmitted']),
+      draftStatus: serializer.fromJson<String>(json['draftStatus']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -912,6 +943,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
       'revisionId': serializer.toJson<String>(revisionId),
       'currentQuestionIndex': serializer.toJson<int>(currentQuestionIndex),
       'isSubmitted': serializer.toJson<bool>(isSubmitted),
+      'draftStatus': serializer.toJson<String>(draftStatus),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -923,6 +955,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
     String? revisionId,
     int? currentQuestionIndex,
     bool? isSubmitted,
+    String? draftStatus,
     DateTime? updatedAt,
   }) => QuizDraft(
     id: id ?? this.id,
@@ -931,6 +964,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
     revisionId: revisionId ?? this.revisionId,
     currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
     isSubmitted: isSubmitted ?? this.isSubmitted,
+    draftStatus: draftStatus ?? this.draftStatus,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   QuizDraft copyWithCompanion(QuizDraftsCompanion data) {
@@ -947,6 +981,9 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
       isSubmitted: data.isSubmitted.present
           ? data.isSubmitted.value
           : this.isSubmitted,
+      draftStatus: data.draftStatus.present
+          ? data.draftStatus.value
+          : this.draftStatus,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -960,6 +997,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
           ..write('revisionId: $revisionId, ')
           ..write('currentQuestionIndex: $currentQuestionIndex, ')
           ..write('isSubmitted: $isSubmitted, ')
+          ..write('draftStatus: $draftStatus, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -973,6 +1011,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
     revisionId,
     currentQuestionIndex,
     isSubmitted,
+    draftStatus,
     updatedAt,
   );
   @override
@@ -985,6 +1024,7 @@ class QuizDraft extends DataClass implements Insertable<QuizDraft> {
           other.revisionId == this.revisionId &&
           other.currentQuestionIndex == this.currentQuestionIndex &&
           other.isSubmitted == this.isSubmitted &&
+          other.draftStatus == this.draftStatus &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -995,6 +1035,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
   final Value<String> revisionId;
   final Value<int> currentQuestionIndex;
   final Value<bool> isSubmitted;
+  final Value<String> draftStatus;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const QuizDraftsCompanion({
@@ -1004,6 +1045,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
     this.revisionId = const Value.absent(),
     this.currentQuestionIndex = const Value.absent(),
     this.isSubmitted = const Value.absent(),
+    this.draftStatus = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1014,6 +1056,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
     required String revisionId,
     this.currentQuestionIndex = const Value.absent(),
     this.isSubmitted = const Value.absent(),
+    this.draftStatus = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1028,6 +1071,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
     Expression<String>? revisionId,
     Expression<int>? currentQuestionIndex,
     Expression<bool>? isSubmitted,
+    Expression<String>? draftStatus,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -1039,6 +1083,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
       if (currentQuestionIndex != null)
         'current_question_index': currentQuestionIndex,
       if (isSubmitted != null) 'is_submitted': isSubmitted,
+      if (draftStatus != null) 'draft_status': draftStatus,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1051,6 +1096,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
     Value<String>? revisionId,
     Value<int>? currentQuestionIndex,
     Value<bool>? isSubmitted,
+    Value<String>? draftStatus,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -1061,6 +1107,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
       revisionId: revisionId ?? this.revisionId,
       currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
       isSubmitted: isSubmitted ?? this.isSubmitted,
+      draftStatus: draftStatus ?? this.draftStatus,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1087,6 +1134,9 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
     if (isSubmitted.present) {
       map['is_submitted'] = Variable<bool>(isSubmitted.value);
     }
+    if (draftStatus.present) {
+      map['draft_status'] = Variable<String>(draftStatus.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -1105,6 +1155,7 @@ class QuizDraftsCompanion extends UpdateCompanion<QuizDraft> {
           ..write('revisionId: $revisionId, ')
           ..write('currentQuestionIndex: $currentQuestionIndex, ')
           ..write('isSubmitted: $isSubmitted, ')
+          ..write('draftStatus: $draftStatus, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1505,6 +1556,884 @@ class QuizAnswersCompanion extends UpdateCompanion<QuizAnswer> {
   }
 }
 
+class $SubmissionOutboxTable extends SubmissionOutbox
+    with TableInfo<$SubmissionOutboxTable, SubmissionOutboxData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SubmissionOutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _learnerIdMeta = const VerificationMeta(
+    'learnerId',
+  );
+  @override
+  late final GeneratedColumn<String> learnerId = GeneratedColumn<String>(
+    'learner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lessonIdMeta = const VerificationMeta(
+    'lessonId',
+  );
+  @override
+  late final GeneratedColumn<String> lessonId = GeneratedColumn<String>(
+    'lesson_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionIdMeta = const VerificationMeta(
+    'revisionId',
+  );
+  @override
+  late final GeneratedColumn<String> revisionId = GeneratedColumn<String>(
+    'revision_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationKeyMeta = const VerificationMeta(
+    'operationKey',
+  );
+  @override
+  late final GeneratedColumn<String> operationKey = GeneratedColumn<String>(
+    'operation_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _encryptedPayloadMeta = const VerificationMeta(
+    'encryptedPayload',
+  );
+  @override
+  late final GeneratedColumn<String> encryptedPayload = GeneratedColumn<String>(
+    'encrypted_payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastAttemptedAtMeta = const VerificationMeta(
+    'lastAttemptedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptedAt =
+      GeneratedColumn<DateTime>(
+        'last_attempted_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _nextEligibleAttemptAtMeta =
+      const VerificationMeta('nextEligibleAttemptAt');
+  @override
+  late final GeneratedColumn<DateTime> nextEligibleAttemptAt =
+      GeneratedColumn<DateTime>(
+        'next_eligible_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastFailureCategoryMeta =
+      const VerificationMeta('lastFailureCategory');
+  @override
+  late final GeneratedColumn<String> lastFailureCategory =
+      GeneratedColumn<String>(
+        'last_failure_category',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _leaseExpiresAtMeta = const VerificationMeta(
+    'leaseExpiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> leaseExpiresAt =
+      GeneratedColumn<DateTime>(
+        'lease_expires_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _serverAcknowledgementMeta =
+      const VerificationMeta('serverAcknowledgement');
+  @override
+  late final GeneratedColumn<String> serverAcknowledgement =
+      GeneratedColumn<String>(
+        'server_acknowledgement',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    learnerId,
+    lessonId,
+    revisionId,
+    operationKey,
+    encryptedPayload,
+    status,
+    attemptCount,
+    createdAt,
+    lastAttemptedAt,
+    nextEligibleAttemptAt,
+    lastFailureCategory,
+    leaseExpiresAt,
+    serverAcknowledgement,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'submission_outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SubmissionOutboxData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('learner_id')) {
+      context.handle(
+        _learnerIdMeta,
+        learnerId.isAcceptableOrUnknown(data['learner_id']!, _learnerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_learnerIdMeta);
+    }
+    if (data.containsKey('lesson_id')) {
+      context.handle(
+        _lessonIdMeta,
+        lessonId.isAcceptableOrUnknown(data['lesson_id']!, _lessonIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lessonIdMeta);
+    }
+    if (data.containsKey('revision_id')) {
+      context.handle(
+        _revisionIdMeta,
+        revisionId.isAcceptableOrUnknown(data['revision_id']!, _revisionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_revisionIdMeta);
+    }
+    if (data.containsKey('operation_key')) {
+      context.handle(
+        _operationKeyMeta,
+        operationKey.isAcceptableOrUnknown(
+          data['operation_key']!,
+          _operationKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationKeyMeta);
+    }
+    if (data.containsKey('encrypted_payload')) {
+      context.handle(
+        _encryptedPayloadMeta,
+        encryptedPayload.isAcceptableOrUnknown(
+          data['encrypted_payload']!,
+          _encryptedPayloadMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_encryptedPayloadMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_attempted_at')) {
+      context.handle(
+        _lastAttemptedAtMeta,
+        lastAttemptedAt.isAcceptableOrUnknown(
+          data['last_attempted_at']!,
+          _lastAttemptedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_eligible_attempt_at')) {
+      context.handle(
+        _nextEligibleAttemptAtMeta,
+        nextEligibleAttemptAt.isAcceptableOrUnknown(
+          data['next_eligible_attempt_at']!,
+          _nextEligibleAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_failure_category')) {
+      context.handle(
+        _lastFailureCategoryMeta,
+        lastFailureCategory.isAcceptableOrUnknown(
+          data['last_failure_category']!,
+          _lastFailureCategoryMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lease_expires_at')) {
+      context.handle(
+        _leaseExpiresAtMeta,
+        leaseExpiresAt.isAcceptableOrUnknown(
+          data['lease_expires_at']!,
+          _leaseExpiresAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('server_acknowledgement')) {
+      context.handle(
+        _serverAcknowledgementMeta,
+        serverAcknowledgement.isAcceptableOrUnknown(
+          data['server_acknowledgement']!,
+          _serverAcknowledgementMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SubmissionOutboxData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SubmissionOutboxData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      learnerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}learner_id'],
+      )!,
+      lessonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lesson_id'],
+      )!,
+      revisionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}revision_id'],
+      )!,
+      operationKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_key'],
+      )!,
+      encryptedPayload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}encrypted_payload'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastAttemptedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempted_at'],
+      ),
+      nextEligibleAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_eligible_attempt_at'],
+      ),
+      lastFailureCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_failure_category'],
+      ),
+      leaseExpiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}lease_expires_at'],
+      ),
+      serverAcknowledgement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_acknowledgement'],
+      ),
+    );
+  }
+
+  @override
+  $SubmissionOutboxTable createAlias(String alias) {
+    return $SubmissionOutboxTable(attachedDatabase, alias);
+  }
+}
+
+class SubmissionOutboxData extends DataClass
+    implements Insertable<SubmissionOutboxData> {
+  final String id;
+  final String learnerId;
+  final String lessonId;
+  final String revisionId;
+  final String operationKey;
+  final String encryptedPayload;
+  final String status;
+  final int attemptCount;
+  final DateTime createdAt;
+  final DateTime? lastAttemptedAt;
+  final DateTime? nextEligibleAttemptAt;
+  final String? lastFailureCategory;
+  final DateTime? leaseExpiresAt;
+  final String? serverAcknowledgement;
+  const SubmissionOutboxData({
+    required this.id,
+    required this.learnerId,
+    required this.lessonId,
+    required this.revisionId,
+    required this.operationKey,
+    required this.encryptedPayload,
+    required this.status,
+    required this.attemptCount,
+    required this.createdAt,
+    this.lastAttemptedAt,
+    this.nextEligibleAttemptAt,
+    this.lastFailureCategory,
+    this.leaseExpiresAt,
+    this.serverAcknowledgement,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['learner_id'] = Variable<String>(learnerId);
+    map['lesson_id'] = Variable<String>(lessonId);
+    map['revision_id'] = Variable<String>(revisionId);
+    map['operation_key'] = Variable<String>(operationKey);
+    map['encrypted_payload'] = Variable<String>(encryptedPayload);
+    map['status'] = Variable<String>(status);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || lastAttemptedAt != null) {
+      map['last_attempted_at'] = Variable<DateTime>(lastAttemptedAt);
+    }
+    if (!nullToAbsent || nextEligibleAttemptAt != null) {
+      map['next_eligible_attempt_at'] = Variable<DateTime>(
+        nextEligibleAttemptAt,
+      );
+    }
+    if (!nullToAbsent || lastFailureCategory != null) {
+      map['last_failure_category'] = Variable<String>(lastFailureCategory);
+    }
+    if (!nullToAbsent || leaseExpiresAt != null) {
+      map['lease_expires_at'] = Variable<DateTime>(leaseExpiresAt);
+    }
+    if (!nullToAbsent || serverAcknowledgement != null) {
+      map['server_acknowledgement'] = Variable<String>(serverAcknowledgement);
+    }
+    return map;
+  }
+
+  SubmissionOutboxCompanion toCompanion(bool nullToAbsent) {
+    return SubmissionOutboxCompanion(
+      id: Value(id),
+      learnerId: Value(learnerId),
+      lessonId: Value(lessonId),
+      revisionId: Value(revisionId),
+      operationKey: Value(operationKey),
+      encryptedPayload: Value(encryptedPayload),
+      status: Value(status),
+      attemptCount: Value(attemptCount),
+      createdAt: Value(createdAt),
+      lastAttemptedAt: lastAttemptedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptedAt),
+      nextEligibleAttemptAt: nextEligibleAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextEligibleAttemptAt),
+      lastFailureCategory: lastFailureCategory == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastFailureCategory),
+      leaseExpiresAt: leaseExpiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(leaseExpiresAt),
+      serverAcknowledgement: serverAcknowledgement == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverAcknowledgement),
+    );
+  }
+
+  factory SubmissionOutboxData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SubmissionOutboxData(
+      id: serializer.fromJson<String>(json['id']),
+      learnerId: serializer.fromJson<String>(json['learnerId']),
+      lessonId: serializer.fromJson<String>(json['lessonId']),
+      revisionId: serializer.fromJson<String>(json['revisionId']),
+      operationKey: serializer.fromJson<String>(json['operationKey']),
+      encryptedPayload: serializer.fromJson<String>(json['encryptedPayload']),
+      status: serializer.fromJson<String>(json['status']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastAttemptedAt: serializer.fromJson<DateTime?>(json['lastAttemptedAt']),
+      nextEligibleAttemptAt: serializer.fromJson<DateTime?>(
+        json['nextEligibleAttemptAt'],
+      ),
+      lastFailureCategory: serializer.fromJson<String?>(
+        json['lastFailureCategory'],
+      ),
+      leaseExpiresAt: serializer.fromJson<DateTime?>(json['leaseExpiresAt']),
+      serverAcknowledgement: serializer.fromJson<String?>(
+        json['serverAcknowledgement'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'learnerId': serializer.toJson<String>(learnerId),
+      'lessonId': serializer.toJson<String>(lessonId),
+      'revisionId': serializer.toJson<String>(revisionId),
+      'operationKey': serializer.toJson<String>(operationKey),
+      'encryptedPayload': serializer.toJson<String>(encryptedPayload),
+      'status': serializer.toJson<String>(status),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastAttemptedAt': serializer.toJson<DateTime?>(lastAttemptedAt),
+      'nextEligibleAttemptAt': serializer.toJson<DateTime?>(
+        nextEligibleAttemptAt,
+      ),
+      'lastFailureCategory': serializer.toJson<String?>(lastFailureCategory),
+      'leaseExpiresAt': serializer.toJson<DateTime?>(leaseExpiresAt),
+      'serverAcknowledgement': serializer.toJson<String?>(
+        serverAcknowledgement,
+      ),
+    };
+  }
+
+  SubmissionOutboxData copyWith({
+    String? id,
+    String? learnerId,
+    String? lessonId,
+    String? revisionId,
+    String? operationKey,
+    String? encryptedPayload,
+    String? status,
+    int? attemptCount,
+    DateTime? createdAt,
+    Value<DateTime?> lastAttemptedAt = const Value.absent(),
+    Value<DateTime?> nextEligibleAttemptAt = const Value.absent(),
+    Value<String?> lastFailureCategory = const Value.absent(),
+    Value<DateTime?> leaseExpiresAt = const Value.absent(),
+    Value<String?> serverAcknowledgement = const Value.absent(),
+  }) => SubmissionOutboxData(
+    id: id ?? this.id,
+    learnerId: learnerId ?? this.learnerId,
+    lessonId: lessonId ?? this.lessonId,
+    revisionId: revisionId ?? this.revisionId,
+    operationKey: operationKey ?? this.operationKey,
+    encryptedPayload: encryptedPayload ?? this.encryptedPayload,
+    status: status ?? this.status,
+    attemptCount: attemptCount ?? this.attemptCount,
+    createdAt: createdAt ?? this.createdAt,
+    lastAttemptedAt: lastAttemptedAt.present
+        ? lastAttemptedAt.value
+        : this.lastAttemptedAt,
+    nextEligibleAttemptAt: nextEligibleAttemptAt.present
+        ? nextEligibleAttemptAt.value
+        : this.nextEligibleAttemptAt,
+    lastFailureCategory: lastFailureCategory.present
+        ? lastFailureCategory.value
+        : this.lastFailureCategory,
+    leaseExpiresAt: leaseExpiresAt.present
+        ? leaseExpiresAt.value
+        : this.leaseExpiresAt,
+    serverAcknowledgement: serverAcknowledgement.present
+        ? serverAcknowledgement.value
+        : this.serverAcknowledgement,
+  );
+  SubmissionOutboxData copyWithCompanion(SubmissionOutboxCompanion data) {
+    return SubmissionOutboxData(
+      id: data.id.present ? data.id.value : this.id,
+      learnerId: data.learnerId.present ? data.learnerId.value : this.learnerId,
+      lessonId: data.lessonId.present ? data.lessonId.value : this.lessonId,
+      revisionId: data.revisionId.present
+          ? data.revisionId.value
+          : this.revisionId,
+      operationKey: data.operationKey.present
+          ? data.operationKey.value
+          : this.operationKey,
+      encryptedPayload: data.encryptedPayload.present
+          ? data.encryptedPayload.value
+          : this.encryptedPayload,
+      status: data.status.present ? data.status.value : this.status,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastAttemptedAt: data.lastAttemptedAt.present
+          ? data.lastAttemptedAt.value
+          : this.lastAttemptedAt,
+      nextEligibleAttemptAt: data.nextEligibleAttemptAt.present
+          ? data.nextEligibleAttemptAt.value
+          : this.nextEligibleAttemptAt,
+      lastFailureCategory: data.lastFailureCategory.present
+          ? data.lastFailureCategory.value
+          : this.lastFailureCategory,
+      leaseExpiresAt: data.leaseExpiresAt.present
+          ? data.leaseExpiresAt.value
+          : this.leaseExpiresAt,
+      serverAcknowledgement: data.serverAcknowledgement.present
+          ? data.serverAcknowledgement.value
+          : this.serverAcknowledgement,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SubmissionOutboxData(')
+          ..write('id: $id, ')
+          ..write('learnerId: $learnerId, ')
+          ..write('lessonId: $lessonId, ')
+          ..write('revisionId: $revisionId, ')
+          ..write('operationKey: $operationKey, ')
+          ..write('encryptedPayload: $encryptedPayload, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastAttemptedAt: $lastAttemptedAt, ')
+          ..write('nextEligibleAttemptAt: $nextEligibleAttemptAt, ')
+          ..write('lastFailureCategory: $lastFailureCategory, ')
+          ..write('leaseExpiresAt: $leaseExpiresAt, ')
+          ..write('serverAcknowledgement: $serverAcknowledgement')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    learnerId,
+    lessonId,
+    revisionId,
+    operationKey,
+    encryptedPayload,
+    status,
+    attemptCount,
+    createdAt,
+    lastAttemptedAt,
+    nextEligibleAttemptAt,
+    lastFailureCategory,
+    leaseExpiresAt,
+    serverAcknowledgement,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SubmissionOutboxData &&
+          other.id == this.id &&
+          other.learnerId == this.learnerId &&
+          other.lessonId == this.lessonId &&
+          other.revisionId == this.revisionId &&
+          other.operationKey == this.operationKey &&
+          other.encryptedPayload == this.encryptedPayload &&
+          other.status == this.status &&
+          other.attemptCount == this.attemptCount &&
+          other.createdAt == this.createdAt &&
+          other.lastAttemptedAt == this.lastAttemptedAt &&
+          other.nextEligibleAttemptAt == this.nextEligibleAttemptAt &&
+          other.lastFailureCategory == this.lastFailureCategory &&
+          other.leaseExpiresAt == this.leaseExpiresAt &&
+          other.serverAcknowledgement == this.serverAcknowledgement);
+}
+
+class SubmissionOutboxCompanion extends UpdateCompanion<SubmissionOutboxData> {
+  final Value<String> id;
+  final Value<String> learnerId;
+  final Value<String> lessonId;
+  final Value<String> revisionId;
+  final Value<String> operationKey;
+  final Value<String> encryptedPayload;
+  final Value<String> status;
+  final Value<int> attemptCount;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> lastAttemptedAt;
+  final Value<DateTime?> nextEligibleAttemptAt;
+  final Value<String?> lastFailureCategory;
+  final Value<DateTime?> leaseExpiresAt;
+  final Value<String?> serverAcknowledgement;
+  final Value<int> rowid;
+  const SubmissionOutboxCompanion({
+    this.id = const Value.absent(),
+    this.learnerId = const Value.absent(),
+    this.lessonId = const Value.absent(),
+    this.revisionId = const Value.absent(),
+    this.operationKey = const Value.absent(),
+    this.encryptedPayload = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastAttemptedAt = const Value.absent(),
+    this.nextEligibleAttemptAt = const Value.absent(),
+    this.lastFailureCategory = const Value.absent(),
+    this.leaseExpiresAt = const Value.absent(),
+    this.serverAcknowledgement = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SubmissionOutboxCompanion.insert({
+    required String id,
+    required String learnerId,
+    required String lessonId,
+    required String revisionId,
+    required String operationKey,
+    required String encryptedPayload,
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    required DateTime createdAt,
+    this.lastAttemptedAt = const Value.absent(),
+    this.nextEligibleAttemptAt = const Value.absent(),
+    this.lastFailureCategory = const Value.absent(),
+    this.leaseExpiresAt = const Value.absent(),
+    this.serverAcknowledgement = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       learnerId = Value(learnerId),
+       lessonId = Value(lessonId),
+       revisionId = Value(revisionId),
+       operationKey = Value(operationKey),
+       encryptedPayload = Value(encryptedPayload),
+       createdAt = Value(createdAt);
+  static Insertable<SubmissionOutboxData> custom({
+    Expression<String>? id,
+    Expression<String>? learnerId,
+    Expression<String>? lessonId,
+    Expression<String>? revisionId,
+    Expression<String>? operationKey,
+    Expression<String>? encryptedPayload,
+    Expression<String>? status,
+    Expression<int>? attemptCount,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastAttemptedAt,
+    Expression<DateTime>? nextEligibleAttemptAt,
+    Expression<String>? lastFailureCategory,
+    Expression<DateTime>? leaseExpiresAt,
+    Expression<String>? serverAcknowledgement,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (learnerId != null) 'learner_id': learnerId,
+      if (lessonId != null) 'lesson_id': lessonId,
+      if (revisionId != null) 'revision_id': revisionId,
+      if (operationKey != null) 'operation_key': operationKey,
+      if (encryptedPayload != null) 'encrypted_payload': encryptedPayload,
+      if (status != null) 'status': status,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastAttemptedAt != null) 'last_attempted_at': lastAttemptedAt,
+      if (nextEligibleAttemptAt != null)
+        'next_eligible_attempt_at': nextEligibleAttemptAt,
+      if (lastFailureCategory != null)
+        'last_failure_category': lastFailureCategory,
+      if (leaseExpiresAt != null) 'lease_expires_at': leaseExpiresAt,
+      if (serverAcknowledgement != null)
+        'server_acknowledgement': serverAcknowledgement,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SubmissionOutboxCompanion copyWith({
+    Value<String>? id,
+    Value<String>? learnerId,
+    Value<String>? lessonId,
+    Value<String>? revisionId,
+    Value<String>? operationKey,
+    Value<String>? encryptedPayload,
+    Value<String>? status,
+    Value<int>? attemptCount,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? lastAttemptedAt,
+    Value<DateTime?>? nextEligibleAttemptAt,
+    Value<String?>? lastFailureCategory,
+    Value<DateTime?>? leaseExpiresAt,
+    Value<String?>? serverAcknowledgement,
+    Value<int>? rowid,
+  }) {
+    return SubmissionOutboxCompanion(
+      id: id ?? this.id,
+      learnerId: learnerId ?? this.learnerId,
+      lessonId: lessonId ?? this.lessonId,
+      revisionId: revisionId ?? this.revisionId,
+      operationKey: operationKey ?? this.operationKey,
+      encryptedPayload: encryptedPayload ?? this.encryptedPayload,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      createdAt: createdAt ?? this.createdAt,
+      lastAttemptedAt: lastAttemptedAt ?? this.lastAttemptedAt,
+      nextEligibleAttemptAt:
+          nextEligibleAttemptAt ?? this.nextEligibleAttemptAt,
+      lastFailureCategory: lastFailureCategory ?? this.lastFailureCategory,
+      leaseExpiresAt: leaseExpiresAt ?? this.leaseExpiresAt,
+      serverAcknowledgement:
+          serverAcknowledgement ?? this.serverAcknowledgement,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (learnerId.present) {
+      map['learner_id'] = Variable<String>(learnerId.value);
+    }
+    if (lessonId.present) {
+      map['lesson_id'] = Variable<String>(lessonId.value);
+    }
+    if (revisionId.present) {
+      map['revision_id'] = Variable<String>(revisionId.value);
+    }
+    if (operationKey.present) {
+      map['operation_key'] = Variable<String>(operationKey.value);
+    }
+    if (encryptedPayload.present) {
+      map['encrypted_payload'] = Variable<String>(encryptedPayload.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastAttemptedAt.present) {
+      map['last_attempted_at'] = Variable<DateTime>(lastAttemptedAt.value);
+    }
+    if (nextEligibleAttemptAt.present) {
+      map['next_eligible_attempt_at'] = Variable<DateTime>(
+        nextEligibleAttemptAt.value,
+      );
+    }
+    if (lastFailureCategory.present) {
+      map['last_failure_category'] = Variable<String>(
+        lastFailureCategory.value,
+      );
+    }
+    if (leaseExpiresAt.present) {
+      map['lease_expires_at'] = Variable<DateTime>(leaseExpiresAt.value);
+    }
+    if (serverAcknowledgement.present) {
+      map['server_acknowledgement'] = Variable<String>(
+        serverAcknowledgement.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SubmissionOutboxCompanion(')
+          ..write('id: $id, ')
+          ..write('learnerId: $learnerId, ')
+          ..write('lessonId: $lessonId, ')
+          ..write('revisionId: $revisionId, ')
+          ..write('operationKey: $operationKey, ')
+          ..write('encryptedPayload: $encryptedPayload, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastAttemptedAt: $lastAttemptedAt, ')
+          ..write('nextEligibleAttemptAt: $nextEligibleAttemptAt, ')
+          ..write('lastFailureCategory: $lastFailureCategory, ')
+          ..write('leaseExpiresAt: $leaseExpiresAt, ')
+          ..write('serverAcknowledgement: $serverAcknowledgement, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1513,6 +2442,21 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CachedLessonsTable cachedLessons = $CachedLessonsTable(this);
   late final $QuizDraftsTable quizDrafts = $QuizDraftsTable(this);
   late final $QuizAnswersTable quizAnswers = $QuizAnswersTable(this);
+  late final $SubmissionOutboxTable submissionOutbox = $SubmissionOutboxTable(
+    this,
+  );
+  late final Index idxOutboxLearnerStatus = Index(
+    'idx_outbox_learner_status',
+    'CREATE INDEX idx_outbox_learner_status ON submission_outbox (learner_id, status)',
+  );
+  late final Index idxOutboxStatusEligible = Index(
+    'idx_outbox_status_eligible',
+    'CREATE INDEX idx_outbox_status_eligible ON submission_outbox (status, next_eligible_attempt_at)',
+  );
+  late final Index idxOutboxLeaseExpires = Index(
+    'idx_outbox_lease_expires',
+    'CREATE INDEX idx_outbox_lease_expires ON submission_outbox (lease_expires_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1522,6 +2466,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedLessons,
     quizDrafts,
     quizAnswers,
+    submissionOutbox,
+    idxOutboxLearnerStatus,
+    idxOutboxStatusEligible,
+    idxOutboxLeaseExpires,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1926,6 +2874,7 @@ typedef $$QuizDraftsTableCreateCompanionBuilder =
       required String revisionId,
       Value<int> currentQuestionIndex,
       Value<bool> isSubmitted,
+      Value<String> draftStatus,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -1937,6 +2886,7 @@ typedef $$QuizDraftsTableUpdateCompanionBuilder =
       Value<String> revisionId,
       Value<int> currentQuestionIndex,
       Value<bool> isSubmitted,
+      Value<String> draftStatus,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -2000,6 +2950,11 @@ class $$QuizDraftsTableFilterComposer
 
   ColumnFilters<bool> get isSubmitted => $composableBuilder(
     column: $table.isSubmitted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get draftStatus => $composableBuilder(
+    column: $table.draftStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2073,6 +3028,11 @@ class $$QuizDraftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get draftStatus => $composableBuilder(
+    column: $table.draftStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2109,6 +3069,11 @@ class $$QuizDraftsTableAnnotationComposer
 
   GeneratedColumn<bool> get isSubmitted => $composableBuilder(
     column: $table.isSubmitted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get draftStatus => $composableBuilder(
+    column: $table.draftStatus,
     builder: (column) => column,
   );
 
@@ -2175,6 +3140,7 @@ class $$QuizDraftsTableTableManager
                 Value<String> revisionId = const Value.absent(),
                 Value<int> currentQuestionIndex = const Value.absent(),
                 Value<bool> isSubmitted = const Value.absent(),
+                Value<String> draftStatus = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => QuizDraftsCompanion(
@@ -2184,6 +3150,7 @@ class $$QuizDraftsTableTableManager
                 revisionId: revisionId,
                 currentQuestionIndex: currentQuestionIndex,
                 isSubmitted: isSubmitted,
+                draftStatus: draftStatus,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -2195,6 +3162,7 @@ class $$QuizDraftsTableTableManager
                 required String revisionId,
                 Value<int> currentQuestionIndex = const Value.absent(),
                 Value<bool> isSubmitted = const Value.absent(),
+                Value<String> draftStatus = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => QuizDraftsCompanion.insert(
@@ -2204,6 +3172,7 @@ class $$QuizDraftsTableTableManager
                 revisionId: revisionId,
                 currentQuestionIndex: currentQuestionIndex,
                 isSubmitted: isSubmitted,
+                draftStatus: draftStatus,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -2584,6 +3553,405 @@ typedef $$QuizAnswersTableProcessedTableManager =
       QuizAnswer,
       PrefetchHooks Function({bool draftId})
     >;
+typedef $$SubmissionOutboxTableCreateCompanionBuilder =
+    SubmissionOutboxCompanion Function({
+      required String id,
+      required String learnerId,
+      required String lessonId,
+      required String revisionId,
+      required String operationKey,
+      required String encryptedPayload,
+      Value<String> status,
+      Value<int> attemptCount,
+      required DateTime createdAt,
+      Value<DateTime?> lastAttemptedAt,
+      Value<DateTime?> nextEligibleAttemptAt,
+      Value<String?> lastFailureCategory,
+      Value<DateTime?> leaseExpiresAt,
+      Value<String?> serverAcknowledgement,
+      Value<int> rowid,
+    });
+typedef $$SubmissionOutboxTableUpdateCompanionBuilder =
+    SubmissionOutboxCompanion Function({
+      Value<String> id,
+      Value<String> learnerId,
+      Value<String> lessonId,
+      Value<String> revisionId,
+      Value<String> operationKey,
+      Value<String> encryptedPayload,
+      Value<String> status,
+      Value<int> attemptCount,
+      Value<DateTime> createdAt,
+      Value<DateTime?> lastAttemptedAt,
+      Value<DateTime?> nextEligibleAttemptAt,
+      Value<String?> lastFailureCategory,
+      Value<DateTime?> leaseExpiresAt,
+      Value<String?> serverAcknowledgement,
+      Value<int> rowid,
+    });
+
+class $$SubmissionOutboxTableFilterComposer
+    extends Composer<_$AppDatabase, $SubmissionOutboxTable> {
+  $$SubmissionOutboxTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get learnerId => $composableBuilder(
+    column: $table.learnerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lessonId => $composableBuilder(
+    column: $table.lessonId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get revisionId => $composableBuilder(
+    column: $table.revisionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operationKey => $composableBuilder(
+    column: $table.operationKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptedAt => $composableBuilder(
+    column: $table.lastAttemptedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextEligibleAttemptAt => $composableBuilder(
+    column: $table.nextEligibleAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastFailureCategory => $composableBuilder(
+    column: $table.lastFailureCategory,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get leaseExpiresAt => $composableBuilder(
+    column: $table.leaseExpiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverAcknowledgement => $composableBuilder(
+    column: $table.serverAcknowledgement,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SubmissionOutboxTableOrderingComposer
+    extends Composer<_$AppDatabase, $SubmissionOutboxTable> {
+  $$SubmissionOutboxTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get learnerId => $composableBuilder(
+    column: $table.learnerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lessonId => $composableBuilder(
+    column: $table.lessonId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get revisionId => $composableBuilder(
+    column: $table.revisionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operationKey => $composableBuilder(
+    column: $table.operationKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptedAt => $composableBuilder(
+    column: $table.lastAttemptedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextEligibleAttemptAt => $composableBuilder(
+    column: $table.nextEligibleAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastFailureCategory => $composableBuilder(
+    column: $table.lastFailureCategory,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get leaseExpiresAt => $composableBuilder(
+    column: $table.leaseExpiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverAcknowledgement => $composableBuilder(
+    column: $table.serverAcknowledgement,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SubmissionOutboxTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SubmissionOutboxTable> {
+  $$SubmissionOutboxTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get learnerId =>
+      $composableBuilder(column: $table.learnerId, builder: (column) => column);
+
+  GeneratedColumn<String> get lessonId =>
+      $composableBuilder(column: $table.lessonId, builder: (column) => column);
+
+  GeneratedColumn<String> get revisionId => $composableBuilder(
+    column: $table.revisionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get operationKey => $composableBuilder(
+    column: $table.operationKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get encryptedPayload => $composableBuilder(
+    column: $table.encryptedPayload,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAttemptedAt => $composableBuilder(
+    column: $table.lastAttemptedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextEligibleAttemptAt => $composableBuilder(
+    column: $table.nextEligibleAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastFailureCategory => $composableBuilder(
+    column: $table.lastFailureCategory,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get leaseExpiresAt => $composableBuilder(
+    column: $table.leaseExpiresAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serverAcknowledgement => $composableBuilder(
+    column: $table.serverAcknowledgement,
+    builder: (column) => column,
+  );
+}
+
+class $$SubmissionOutboxTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SubmissionOutboxTable,
+          SubmissionOutboxData,
+          $$SubmissionOutboxTableFilterComposer,
+          $$SubmissionOutboxTableOrderingComposer,
+          $$SubmissionOutboxTableAnnotationComposer,
+          $$SubmissionOutboxTableCreateCompanionBuilder,
+          $$SubmissionOutboxTableUpdateCompanionBuilder,
+          (
+            SubmissionOutboxData,
+            BaseReferences<
+              _$AppDatabase,
+              $SubmissionOutboxTable,
+              SubmissionOutboxData
+            >,
+          ),
+          SubmissionOutboxData,
+          PrefetchHooks Function()
+        > {
+  $$SubmissionOutboxTableTableManager(
+    _$AppDatabase db,
+    $SubmissionOutboxTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SubmissionOutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SubmissionOutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SubmissionOutboxTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> learnerId = const Value.absent(),
+                Value<String> lessonId = const Value.absent(),
+                Value<String> revisionId = const Value.absent(),
+                Value<String> operationKey = const Value.absent(),
+                Value<String> encryptedPayload = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> lastAttemptedAt = const Value.absent(),
+                Value<DateTime?> nextEligibleAttemptAt = const Value.absent(),
+                Value<String?> lastFailureCategory = const Value.absent(),
+                Value<DateTime?> leaseExpiresAt = const Value.absent(),
+                Value<String?> serverAcknowledgement = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SubmissionOutboxCompanion(
+                id: id,
+                learnerId: learnerId,
+                lessonId: lessonId,
+                revisionId: revisionId,
+                operationKey: operationKey,
+                encryptedPayload: encryptedPayload,
+                status: status,
+                attemptCount: attemptCount,
+                createdAt: createdAt,
+                lastAttemptedAt: lastAttemptedAt,
+                nextEligibleAttemptAt: nextEligibleAttemptAt,
+                lastFailureCategory: lastFailureCategory,
+                leaseExpiresAt: leaseExpiresAt,
+                serverAcknowledgement: serverAcknowledgement,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String learnerId,
+                required String lessonId,
+                required String revisionId,
+                required String operationKey,
+                required String encryptedPayload,
+                Value<String> status = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> lastAttemptedAt = const Value.absent(),
+                Value<DateTime?> nextEligibleAttemptAt = const Value.absent(),
+                Value<String?> lastFailureCategory = const Value.absent(),
+                Value<DateTime?> leaseExpiresAt = const Value.absent(),
+                Value<String?> serverAcknowledgement = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SubmissionOutboxCompanion.insert(
+                id: id,
+                learnerId: learnerId,
+                lessonId: lessonId,
+                revisionId: revisionId,
+                operationKey: operationKey,
+                encryptedPayload: encryptedPayload,
+                status: status,
+                attemptCount: attemptCount,
+                createdAt: createdAt,
+                lastAttemptedAt: lastAttemptedAt,
+                nextEligibleAttemptAt: nextEligibleAttemptAt,
+                lastFailureCategory: lastFailureCategory,
+                leaseExpiresAt: leaseExpiresAt,
+                serverAcknowledgement: serverAcknowledgement,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SubmissionOutboxTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SubmissionOutboxTable,
+      SubmissionOutboxData,
+      $$SubmissionOutboxTableFilterComposer,
+      $$SubmissionOutboxTableOrderingComposer,
+      $$SubmissionOutboxTableAnnotationComposer,
+      $$SubmissionOutboxTableCreateCompanionBuilder,
+      $$SubmissionOutboxTableUpdateCompanionBuilder,
+      (
+        SubmissionOutboxData,
+        BaseReferences<
+          _$AppDatabase,
+          $SubmissionOutboxTable,
+          SubmissionOutboxData
+        >,
+      ),
+      SubmissionOutboxData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2596,4 +3964,6 @@ class $AppDatabaseManager {
       $$QuizDraftsTableTableManager(_db, _db.quizDrafts);
   $$QuizAnswersTableTableManager get quizAnswers =>
       $$QuizAnswersTableTableManager(_db, _db.quizAnswers);
+  $$SubmissionOutboxTableTableManager get submissionOutbox =>
+      $$SubmissionOutboxTableTableManager(_db, _db.submissionOutbox);
 }

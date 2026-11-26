@@ -8,6 +8,8 @@ import '../features/auth/presentation/bloc/auth_state.dart';
 import '../features/lessons/presentation/bloc/lesson_bloc.dart';
 import '../features/quiz/presentation/bloc/quiz_bloc.dart';
 import '../features/quiz/presentation/bloc/quiz_event.dart';
+import '../features/sync/presentation/bloc/sync_bloc.dart';
+import '../features/sync/presentation/bloc/sync_event.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -25,6 +27,7 @@ class _TogaAppState extends State<TogaApp> {
   late final AuthBloc _authBloc;
   late final LessonBloc _lessonBloc;
   late final QuizBloc _quizBloc;
+  late final SyncBloc _syncBloc;
   late final GoRouter _router;
 
   @override
@@ -33,6 +36,7 @@ class _TogaAppState extends State<TogaApp> {
     _authBloc = getIt<AuthBloc>();
     _lessonBloc = getIt<LessonBloc>();
     _quizBloc = getIt<QuizBloc>();
+    _syncBloc = getIt<SyncBloc>();
     _router = widget.routerOverride ?? createAppRouter(_authBloc);
 
     // Trigger session restoration on app startup
@@ -44,6 +48,7 @@ class _TogaAppState extends State<TogaApp> {
     _authBloc.close();
     _lessonBloc.close();
     _quizBloc.close();
+    _syncBloc.close();
     super.dispose();
   }
 
@@ -54,12 +59,14 @@ class _TogaAppState extends State<TogaApp> {
         BlocProvider<AuthBloc>.value(value: _authBloc),
         BlocProvider<LessonBloc>.value(value: _lessonBloc),
         BlocProvider<QuizBloc>.value(value: _quizBloc),
+        BlocProvider<SyncBloc>.value(value: _syncBloc),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         bloc: _authBloc,
         listener: (context, authState) {
           if (authState is AuthUnauthenticated || authState is AuthSwitching) {
             _quizBloc.add(const ResetQuiz());
+            _syncBloc.add(const ResetSync());
           }
         },
         child: MaterialApp.router(

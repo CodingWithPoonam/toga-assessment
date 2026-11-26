@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'tables/cached_lessons_table.dart';
 import 'tables/quiz_answers_table.dart';
 import 'tables/quiz_drafts_table.dart';
+import 'tables/submission_outbox_table.dart';
 
 part 'app_database.g.dart';
 
@@ -22,13 +23,19 @@ class DatabaseMetadataTable extends Table {
 /// Central database boundary for local persistence
 /// Supports schema migrations, atomic writes, and background SQLite executor
 @DriftDatabase(
-  tables: [DatabaseMetadataTable, CachedLessons, QuizDrafts, QuizAnswers],
+  tables: [
+    DatabaseMetadataTable,
+    CachedLessons,
+    QuizDrafts,
+    QuizAnswers,
+    SubmissionOutbox,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +51,13 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(cachedLessons);
         await m.createTable(quizDrafts);
         await m.createTable(quizAnswers);
+      }
+      if (from < 3) {
+        await m.createTable(submissionOutbox);
+        await m.addColumn(quizDrafts, quizDrafts.draftStatus);
+        await customStatement(
+          "UPDATE quiz_drafts SET draft_status = CASE WHEN is_submitted = 1 THEN 'staged' ELSE 'in_progress' END;",
+        );
       }
     },
   );

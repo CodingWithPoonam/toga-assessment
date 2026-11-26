@@ -13,6 +13,12 @@ import '../../features/quiz/data/datasources/quiz_local_datasource.dart';
 import '../../features/quiz/data/repositories/quiz_repository_impl.dart';
 import '../../features/quiz/domain/repositories/quiz_repository.dart';
 import '../../features/quiz/presentation/bloc/quiz_bloc.dart';
+import '../../features/sync/data/datasources/sync_local_datasource.dart';
+import '../../features/sync/data/datasources/sync_remote_datasource.dart';
+import '../../features/sync/data/repositories/sync_repository_impl.dart';
+import '../../features/sync/domain/repositories/sync_repository.dart';
+import '../../features/sync/domain/usecases/sync_engine.dart';
+import '../../features/sync/presentation/bloc/sync_bloc.dart';
 import '../database/app_database.dart';
 import '../network/auth_interceptor.dart';
 import '../network/dio_client.dart';
@@ -33,6 +39,9 @@ Future<void> configureDependencies({
   AuthRepository? authRepositoryOverride,
   LessonRepository? lessonRepositoryOverride,
   QuizRepository? quizRepositoryOverride,
+  SyncRepository? syncRepositoryOverride,
+  SyncRemoteDataSource? syncRemoteDataSourceOverride,
+  ISyncEngine? syncEngineOverride,
 }) async {
   if (getIt.isRegistered<NetworkConfig>()) {
     await getIt.reset();
@@ -121,7 +130,36 @@ Future<void> configureDependencies({
       );
   getIt.registerSingleton<QuizRepository>(quizRepository);
 
-  // 8. Presentation BLoCs
+  // 8. Sync Feature
+  getIt.registerLazySingleton<SyncLocalDataSource>(
+    () => SyncLocalDataSource(
+      database: getIt<AppDatabase>(),
+      encryptionService: getIt<IEncryptionService>(),
+    ),
+  );
+  final syncRemoteDataSource =
+      syncRemoteDataSourceOverride ?? SyncRemoteDataSource();
+  getIt.registerSingleton<SyncRemoteDataSource>(syncRemoteDataSource);
+
+  final syncRepository =
+      syncRepositoryOverride ??
+      SyncRepositoryImpl(
+        localDataSource: getIt<SyncLocalDataSource>(),
+        sessionManager: getIt<ISessionManager>(),
+      );
+  getIt.registerSingleton<SyncRepository>(syncRepository);
+
+  final syncEngine =
+      syncEngineOverride ??
+      SyncEngine(
+        syncRepository: getIt<SyncRepository>(),
+        remoteDataSource: getIt<SyncRemoteDataSource>(),
+        encryptionService: getIt<IEncryptionService>(),
+        sessionManager: getIt<ISessionManager>(),
+      );
+  getIt.registerSingleton<ISyncEngine>(syncEngine);
+
+  // 9. Presentation BLoCs
   getIt.registerFactory<AuthBloc>(
     () => AuthBloc(authRepository: getIt<AuthRepository>()),
   );
@@ -132,6 +170,12 @@ Future<void> configureDependencies({
     () => QuizBloc(
       quizRepository: getIt<QuizRepository>(),
       sessionManager: getIt<ISessionManager>(),
+    ),
+  );
+  getIt.registerFactory<SyncBloc>(
+    () => SyncBloc(
+      syncRepository: getIt<SyncRepository>(),
+      syncEngine: getIt<ISyncEngine>(),
     ),
   );
 
