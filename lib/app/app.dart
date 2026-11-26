@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../core/di/injection.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/bloc/auth_event.dart';
+import '../features/lessons/presentation/bloc/lesson_bloc.dart';
+import '../features/quiz/presentation/bloc/quiz_bloc.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
-/// Root application widget configuring routing and Material 3 theming
+/// Root application widget configuring routing, providers, and Material 3 theming
 class TogaApp extends StatefulWidget {
   final GoRouter? routerOverride;
 
@@ -19,12 +21,16 @@ class TogaApp extends StatefulWidget {
 
 class _TogaAppState extends State<TogaApp> {
   late final AuthBloc _authBloc;
+  late final LessonBloc _lessonBloc;
+  late final QuizBloc _quizBloc;
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     _authBloc = getIt<AuthBloc>();
+    _lessonBloc = getIt<LessonBloc>();
+    _quizBloc = getIt<QuizBloc>();
     _router = widget.routerOverride ?? createAppRouter(_authBloc);
 
     // Trigger session restoration on app startup
@@ -33,8 +39,12 @@ class _TogaAppState extends State<TogaApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>.value(
-      value: _authBloc,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>.value(value: _authBloc),
+        BlocProvider<LessonBloc>.value(value: _lessonBloc),
+        BlocProvider<QuizBloc>.value(value: _quizBloc),
+      ],
       child: MaterialApp.router(
         title: 'AIRMAN TOGA',
         debugShowCheckedModeBanner: false,

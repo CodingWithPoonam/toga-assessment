@@ -83,9 +83,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Authenticated route /lessons displayed
-        expect(find.text('Lessons Catalogue'), findsOneWidget);
+        expect(find.text('Lesson Catalogue'), findsOneWidget);
         expect(find.text('Alex Mercer (Learner A)'), findsOneWidget);
-        expect(find.text('Phase 2 Completed'), findsOneWidget);
+        expect(find.text('Available Lessons'), findsOneWidget);
 
         // Verify switch account dialog
         await tester.tap(find.byTooltip('Switch Learner'));
