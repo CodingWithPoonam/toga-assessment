@@ -10,6 +10,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   final ISessionManager? sessionManager;
   String? _activeLessonId;
   String? _activeLearnerId;
+  int _startQuizGeneration = 0;
 
   QuizBloc({required this.quizRepository, this.sessionManager})
     : super(const QuizInitial()) {
@@ -23,12 +24,14 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   }
 
   void _onResetQuiz(ResetQuiz event, Emitter<QuizState> emit) {
+    _startQuizGeneration++;
     _activeLessonId = null;
     _activeLearnerId = null;
     emit(const QuizInitial());
   }
 
   Future<void> _onStartQuiz(StartQuiz event, Emitter<QuizState> emit) async {
+    final gen = ++_startQuizGeneration;
     emit(const QuizLoading());
     _activeLessonId = event.lessonId;
     _activeLearnerId =
@@ -38,10 +41,13 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       final questions = await quizRepository.getQuestionsForLesson(
         event.lessonId,
       );
+      if (gen != _startQuizGeneration || isClosed) return;
+
       final existingDraft = await quizRepository.getDraft(
         learnerId: _activeLearnerId!,
         lessonId: event.lessonId,
       );
+      if (gen != _startQuizGeneration || isClosed) return;
 
       if (existingDraft != null) {
         // Revision check: if draft revision differs from current content revision, prompt learner

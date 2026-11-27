@@ -76,14 +76,10 @@ void main() {
 
         // 2. Lesson Catalogue displayed
         expect(find.text('Lesson Catalogue'), findsOneWidget);
-        expect(find.text('Aerodynamics & Flight Principles'), findsOneWidget);
-        expect(
-          find.text('Aircraft Instruments & Navigation Systems'),
-          findsOneWidget,
-        );
+        expect(find.text('Aviation study units'), findsOneWidget);
 
         // 3. Tap on first lesson to view detail
-        await tester.tap(find.text('Aerodynamics & Flight Principles'));
+        await tester.tap(find.text('Aviation study units'));
         await tester.pumpAndSettle();
 
         expect(find.text('Lesson Detail'), findsOneWidget);
@@ -105,15 +101,13 @@ void main() {
         expect(find.text('Lesson Quiz'), findsOneWidget);
         expect(find.text('Question 1 of 5'), findsOneWidget);
         expect(
-          find.text(
-            'What primary aerodynamic force overcomes an aircraft\'s weight during steady flight?',
-          ),
+          find.text('How many minutes are in one hour?'),
           findsOneWidget,
         );
 
-        // 6. Select option Lift (opt_1c)
-        expect(find.text('Lift'), findsOneWidget);
-        await tester.tap(find.text('Lift'));
+        // 6. Select option 60
+        expect(find.text('60'), findsOneWidget);
+        await tester.tap(find.text('60'));
         await tester.pumpAndSettle();
 
         // 7. Navigate to Next Question

@@ -30,7 +30,7 @@ void main() {
     test('fetches lessons and reflects initial cache state', () async {
       final lessons = await repository.getLessons();
       expect(lessons.length, 2);
-      expect(lessons.first.title, contains('Aerodynamics'));
+      expect(lessons.first.title, contains('Aviation'));
       expect(lessons.first.isCached, isFalse);
     });
 

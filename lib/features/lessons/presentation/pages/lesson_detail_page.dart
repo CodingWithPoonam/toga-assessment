@@ -56,14 +56,16 @@ class _LessonDetailPageState extends State<LessonDetailPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8.0,
+                    runSpacing: 4.0,
                     children: [
-                      Expanded(
-                        child: Text(
-                          lesson.title,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        lesson.title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Chip(

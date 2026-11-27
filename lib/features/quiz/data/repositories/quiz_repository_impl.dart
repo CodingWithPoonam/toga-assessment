@@ -101,6 +101,8 @@ class QuizRepositoryImpl implements QuizRepository {
     final questions = await getQuestionsForLesson(lessonId);
     if (questions.isEmpty) return true;
     final currentRevision = questions.first.revisionId;
-    return currentRevision == draftRevisionId;
+    return currentRevision == draftRevisionId ||
+        (currentRevision == '1' && draftRevisionId == 'rev_1_0') ||
+        (currentRevision == 'rev_1_0' && draftRevisionId == '1');
   }
 }

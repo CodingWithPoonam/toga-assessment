@@ -201,8 +201,11 @@ class _QuizPageState extends State<QuizPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8.0,
+                    runSpacing: 4.0,
                     children: [
                       Text(
                         'Question ${state.currentIndex + 1} of ${state.totalQuestions}',
@@ -217,48 +220,60 @@ class _QuizPageState extends State<QuizPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(state.totalQuestions, (index) {
-                      final isCurrent = index == state.currentIndex;
-                      final isAnswered = state.isQuestionAnswered(index);
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(state.totalQuestions, (index) {
+                        final isCurrent = index == state.currentIndex;
+                        final isAnswered = state.isQuestionAnswered(index);
 
-                      return GestureDetector(
-                        onTap: () {
-                          context.read<QuizBloc>().add(JumpToQuestion(index));
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isCurrent
-                                ? colorScheme.primary
-                                : (isAnswered
-                                      ? colorScheme.primaryContainer
-                                      : colorScheme.surface),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isCurrent
-                                  ? colorScheme.primary
-                                  : colorScheme.outlineVariant,
-                              width: 1.5,
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Semantics(
+                            button: true,
+                            label: 'Question ${index + 1}, '
+                                '${isCurrent ? "current, " : ""}'
+                                '${isAnswered ? "answered" : "unanswered"}',
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onTap: () {
+                                context.read<QuizBloc>().add(JumpToQuestion(index));
+                              },
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? colorScheme.primary
+                                      : (isAnswered
+                                            ? colorScheme.primaryContainer
+                                            : colorScheme.surface),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? colorScheme.primary
+                                        : colorScheme.outlineVariant,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    color: isCurrent
+                                        ? colorScheme.onPrimary
+                                        : (isAnswered
+                                              ? colorScheme.onPrimaryContainer
+                                              : colorScheme.onSurface),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: isCurrent
-                                  ? colorScheme.onPrimary
-                                  : (isAnswered
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurface),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -280,55 +295,60 @@ class _QuizPageState extends State<QuizPage> {
                   ...currentQuestion.options.map((option) {
                     final isSelected = selectedOptionId == option.id;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12.0),
-                      elevation: isSelected ? 2 : 0,
-                      color: isSelected
-                          ? colorScheme.primaryContainer
-                          : colorScheme.surfaceContainerHighest,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: isSelected
-                              ? colorScheme.primary
-                              : Colors.transparent,
-                          width: 1.5,
+                    return Semantics(
+                      selected: isSelected,
+                      button: true,
+                      label: '${option.text}, ${isSelected ? "selected" : "not selected"}',
+                      child: Card(
+                        margin: const EdgeInsets.only(bottom: 12.0),
+                        elevation: isSelected ? 2 : 0,
+                        color: isSelected
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerHighest,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected
+                                ? colorScheme.primary
+                                : Colors.transparent,
+                            width: 1.5,
+                          ),
                         ),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          context.read<QuizBloc>().add(
-                            AnswerSelected(
-                              questionId: currentQuestion.id,
-                              optionId: option.id,
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSelected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                                color: isSelected
-                                    ? colorScheme.primary
-                                    : colorScheme.outline,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            context.read<QuizBloc>().add(
+                              AnswerSelected(
+                                questionId: currentQuestion.id,
+                                optionId: option.id,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  option.text,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  color: isSelected
+                                      ? colorScheme.primary
+                                      : colorScheme.outline,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    option.text,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -338,7 +358,7 @@ class _QuizPageState extends State<QuizPage> {
               ),
             ),
 
-            // Bottom Navigation Bar
+            // Bottom Navigation Bar with responsive wrapping to prevent overflow at 200% text scale
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -350,24 +370,35 @@ class _QuizPageState extends State<QuizPage> {
                   BoxShadow(color: Colors.black12, blurRadius: 4),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8.0,
+                runSpacing: 8.0,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: state.currentIndex > 0
-                        ? () => context.read<QuizBloc>().add(
-                            const PreviousQuestion(),
-                          )
-                        : null,
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Previous'),
+                  Semantics(
+                    button: true,
+                    label: 'Previous question',
+                    child: OutlinedButton.icon(
+                      onPressed: state.currentIndex > 0
+                          ? () => context.read<QuizBloc>().add(
+                              const PreviousQuestion(),
+                            )
+                          : null,
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Previous'),
+                    ),
                   ),
                   if (state.currentIndex < state.totalQuestions - 1)
-                    FilledButton.icon(
-                      onPressed: () =>
-                          context.read<QuizBloc>().add(const NextQuestion()),
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Next'),
+                    Semantics(
+                      button: true,
+                      label: 'Next question',
+                      child: FilledButton.icon(
+                        onPressed: () =>
+                            context.read<QuizBloc>().add(const NextQuestion()),
+                        icon: const Icon(Icons.arrow_forward),
+                        label: const Text('Next'),
+                      ),
                     )
                   else
                     BlocBuilder<SyncBloc, SyncState>(
@@ -375,37 +406,43 @@ class _QuizPageState extends State<QuizPage> {
                         final isSyncing =
                             syncState is SyncStaging ||
                             syncState is SyncInFlight;
-                        return FilledButton.icon(
-                          onPressed: isSyncing
-                              ? null
-                              : () {
-                                  final authState = context
-                                      .read<AuthBloc>()
-                                      .state;
-                                  final learnerId =
-                                      authState is AuthAuthenticated
-                                      ? authState.session.learnerId
-                                      : null;
-                                  if (learnerId != null) {
-                                    context.read<SyncBloc>().add(
-                                      StageAndSyncRequested(
-                                        learnerId: learnerId,
-                                        lessonId: widget.lessonId,
-                                      ),
-                                    );
-                                  }
-                                },
-                          icon: isSyncing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.cloud_upload_outlined),
-                          label: Text(
-                            isSyncing ? 'Submitting...' : 'Submit Attempt',
+                        return Semantics(
+                          button: true,
+                          label: isSyncing
+                              ? 'Submitting quiz attempt'
+                              : 'Submit quiz attempt',
+                          child: FilledButton.icon(
+                            onPressed: isSyncing
+                                ? null
+                                : () {
+                                    final authState = context
+                                        .read<AuthBloc>()
+                                        .state;
+                                    final learnerId =
+                                        authState is AuthAuthenticated
+                                        ? authState.session.learnerId
+                                        : null;
+                                    if (learnerId != null) {
+                                      context.read<SyncBloc>().add(
+                                        StageAndSyncRequested(
+                                          learnerId: learnerId,
+                                          lessonId: widget.lessonId,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            icon: isSyncing
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.cloud_upload_outlined),
+                            label: Text(
+                              isSyncing ? 'Submitting...' : 'Submit Attempt',
+                            ),
                           ),
                         );
                       },

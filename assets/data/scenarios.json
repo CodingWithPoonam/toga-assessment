@@ -1,0 +1,124 @@
+[
+  {
+    "id": "01",
+    "name": "Online success",
+    "setup": [
+      "Login A, load lesson-units revision 1, answer five questions and submit."
+    ],
+    "expected_invariants": [
+      "Truthful loading/result states; one accepted acknowledgement matches owner, session, lesson and revision."
+    ]
+  },
+  {
+    "id": "02",
+    "name": "Offline and process death",
+    "setup": [
+      "Cache a lesson, go offline, answer two questions; terminate the process, relaunch and reopen the session."
+    ],
+    "expected_invariants": [
+      "Answers and position restored on pinned revision; no success claim without server acknowledgement."
+    ]
+  },
+  {
+    "id": "03",
+    "name": "Duplicate triggers",
+    "setup": [
+      "Rapidly tap submit and trigger manual Retry plus app resume simultaneously."
+    ],
+    "expected_invariants": [
+      "One logical operation key and frozen payload; at most one active drain per operation; one server record."
+    ]
+  },
+  {
+    "id": "04",
+    "name": "Lost response",
+    "setup": [
+      "Mock API commits a submission but throws timeout to client. Terminate/relaunch app without resetting mock server records; retry."
+    ],
+    "expected_invariants": [
+      "Same key and canonical payload replay same acknowledgement; no duplicate score/submission."
+    ]
+  },
+  {
+    "id": "05",
+    "name": "Refresh variants",
+    "setup": [
+      "Two requests get 401 with old access token; hold a third old-generation 401 until after refresh completes.",
+      "Separately return 401 from refresh."
+    ],
+    "expected_invariants": [
+      "One shared refresh and bounded original-request retries; late 401 uses current generation without a second unnecessary refresh.",
+      "Denied refresh locks private UI; encrypted draft remains recoverable only after same-account reauthentication."
+    ]
+  },
+  {
+    "id": "06",
+    "name": "Dependency variants",
+    "setup": [
+      "Test 429 Retry-After: 1 then success, repeated 503, repeated timeouts, malformed 200 acknowledgement, and Retry-After exceeding remaining budget."
+    ],
+    "expected_invariants": [
+      "Submission attempts/deadline bounded; malformed acknowledgement is not success; queue not erased; no request after exhausted budget."
+    ]
+  },
+  {
+    "id": "07",
+    "name": "Changed lesson revision",
+    "setup": [
+      "Start a revision 1 quiz, then make the server current revision 2. Submit revision 1 with a new operation key."
+    ],
+    "expected_invariants": [
+      "STALE_CONTENT; preserve original draft, no silent answer remap or retry loop; explicit review/reset decision."
+    ]
+  },
+  {
+    "id": "08",
+    "name": "Logout race",
+    "setup": [
+      "Start an A fetch/sync and pause its response. Explicitly log out/switch to B after an unsynced-work warning; release the A callback."
+    ],
+    "expected_invariants": [
+      "A tokens/private cache/outbox cleared; callbacks cannot resurrect data, update B UI or send A work with B credentials."
+    ]
+  },
+  {
+    "id": "09",
+    "name": "Access variants",
+    "setup": [
+      "Navigate directly to private lesson route without session; request unknown lesson/foreign submission; spoof user_id in request data; advance the protected offline lease beyond 24 hours."
+    ],
+    "expected_invariants": [
+      "Guard private UI; expired lease requires reauthentication without destroying the encrypted draft; reject foreign/mismatched results; ownership derives from authenticated mock API identity, not client body."
+    ]
+  },
+  {
+    "id": "10",
+    "name": "Security inspection",
+    "setup": [
+      "Inspect private persisted payloads, preferences, repository and captured logs; inspect mock/prod configuration and release networking code."
+    ],
+    "expected_invariants": [
+      "No plaintext token/private draft or embedded provider secret; key handled by platform secure storage; no permissive certificate callback in release path."
+    ]
+  },
+  {
+    "id": "11",
+    "name": "Migration variants",
+    "setup": [
+      "Import legacy_private_v1 fixture; relaunch after migration. Separately corrupt local record and simulate missing storage key."
+    ],
+    "expected_invariants": [
+      "Legacy credentials not blindly promoted as valid auth; remove plaintext copy after safe migration/reauth; no crash or invented progress; explicit recover/reset path."
+    ]
+  },
+  {
+    "id": "12",
+    "name": "UI and lifecycle",
+    "setup": [
+      "Use a narrow screen and 200% text; inspect semantic labels. Navigate away/change lesson while a fetch is delayed; resume app repeatedly."
+    ],
+    "expected_invariants": [
+      "No clipped primary action, stale lesson overwrite, setState-after-dispose, retained subscription or duplicate sync trigger."
+    ]
+  }
+]

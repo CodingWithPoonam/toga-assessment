@@ -33,6 +33,9 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     StageAndSyncRequested event,
     Emitter<SyncState> emit,
   ) async {
+    // Invariant: Prevent duplicate concurrent sync drains on repeated taps
+    if (state is SyncStaging || state is SyncInFlight) return;
+
     emit(const SyncStaging());
 
     try {
@@ -58,6 +61,9 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     SyncTriggered event,
     Emitter<SyncState> emit,
   ) async {
+    // Invariant: Prevent duplicate concurrent sync drains on repeated app resume triggers
+    if (state is SyncStaging || state is SyncInFlight) return;
+
     final result = await syncEngine.synchronize(learnerId: event.learnerId);
     _handleSyncResult(result, emit);
   }

@@ -1,12 +1,22 @@
 # TOGA Mobile Delivery Plan: Prototype to Production
 
-## 1. Executive Delivery Strategy & Team Topology
-We follow a phased risk-retirement strategy to transition TOGA from an offline-first prototype to enterprise production. Team topology:
-- **Mobile Lead (Author)**: Architecture governance, security boundaries, sync engine, release gating.
-- **Junior Flutter Engineer 1 (UI/State)**: Lesson catalogue, quiz flows, accessibility, responsive styling.
-- **Junior Flutter Engineer 2 (Core/Client Data)**: Drift SQLite migrations, local caching, platform channels.
-- **Shared Backend Engineer**: FastAPI contracts, idempotent `/v1/submissions`, token revocation webhooks.
-- **QA Engineer**: Offline-to-online scenario automation, network impairment testing, test matrices.
+## 1. Executive Delivery Strategy & Incident Realignment
+We follow an evidence-based risk-retirement model to transition TOGA from candidate prototype to enterprise release. 
+
+### Telemetry & Incident Analysis (Build beta_18 Rollout)
+Field telemetry from `data/incident_observations.csv` captured between 10:00 and 10:30 IST across `prototype_17` and `beta_18` reveals critical operational regressions:
+- **Session Volume**: Grew from 80 sessions (`prototype_17` baseline at 10:00) to 95 sessions (`beta_18` at 10:30), an 18.75% increase (+15 sessions).
+- **Crash Rate**: Crash-free sessions dropped from **98.8%** (79/80) down to **92.6%** (88/95) across 30 minutes. Absolute crashes rose from 1 to 7 (a 600% increase, 7x).
+- **Auth Refresh Storm**: Auth refresh calls surged from **12** to **205** (+193 calls, a 1608.3% increase / ~17.1x). The log documents "login loops on resume", directly reflecting recursive 401 refresh storms (`review/legacy_auth.dart:21-27`).
+- **Sync Queue Backlog**: Pending outbox reports escalated from **2** to **26** (+1200% / 13x), indicating stalled transmissions or premature lease expirations under poor cellular links.
+- **Symbolicated Error**: Telemetry symbolic sample confirmed `setState called after dispose`, matching unmanaged stream subscriptions (`review/legacy_study_page.dart:16`).
+- **Account Isolation**: A single unverified report noted "previous learner name after account switch" at 10:25 (84/90 crash-free).
+
+### What the Data Cannot Establish
+Rigorous engineering governance requires distinguishing facts from hypotheses:
+1. The aggregate CSV data shows strong temporal correlation with `beta_18`, but **cannot prove direct causality** between specific code commits and individual crashes without symbolicated stack trace volume breakdowns.
+2. The learner name leakage remains explicitly an **unverified report**; the telemetry data cannot establish whether this stemmed from client UI caching, a race during delayed fetch, or server-side session aliasing.
+3. The sync backlog does not establish whether submissions were permanently dropped or temporarily buffered offline awaiting reconnect.
 
 ---
 
@@ -14,59 +24,33 @@ We follow a phased risk-retirement strategy to transition TOGA from an offline-f
 
 | Milestone | Scope | Effort | Owner | Dependencies | Exit Evidence & Quality Gate | Release Decision |
 |---|---|---|---|---|---|---|
-| **M1: Prototype** *(Current)* | Core offline flow: auth, cached lessons, encrypted quiz drafts, durable outbox. | 16h *(Done)* | Mobile Lead | Assessment Brief | 79 unit/bloc/widget tests pass; debug APK builds; 0 analyzer issues. | Internal review only |
-| **M2: Engineering Foundation** | FastAPI contract ingestion, integration tests, `WorkManager` background sync, Keystore binding. | 3 Sprints (6 wks) | Team | Official OpenAPI spec & fixtures | E2E integration tests passing on emulator matrix; TLS pinning verified. | Alpha internal dogfooding |
-| **M3: Closed Beta** | Staged rollout (5% -> 20%), crash/ANR instrumentation, telemetry, feedback triage. | 2 Sprints (4 wks) | Team | Backend staging env, TestFlight / Google Play Beta | Crash-free sessions >99.5%; outbox sync success rate >99.0%; zero AAD tamper alerts. | Closed Beta signoff |
-| **M4: Production Release** | Phased public rollout (10% -> 100%), 24/7 on-call rotation, store approvals. | 2 Sprints (4 wks) | Mobile Lead | Security audit signoff, store compliance | Zero release-blocking P0/P1 incidents over 7 days at 100% distribution. | Executive Go/No-Go |
+| **M1: Assessment Prototype** *(Current)* | Core offline flow: auth, cached lessons, encrypted quiz drafts, durable outbox. | Done | Mobile Lead | Candidate Kit | 118 unit/widget/integration tests pass; debug APK builds; 0 analyzer issues. | Assessment signoff |
+| **M2: Reliability Hardening** | Single-flight refresh mutex, generational BLoC guards, lease recovery, Keystore HSM key wrap. | 3 Sprints (6 wks) | Mobile Team | OpenAPI spec & fixtures | Zero recursive refresh calls; E2E integration tests passing on emulator matrix; TLS 1.3 verified. | Internal alpha |
+| **M3: Staged Beta Rollout** | Canary rollout (5% $\to$ 20%), Sentry/Crashlytics monitoring, outbox latency telemetry. | 2 Sprints (4 wks) | Mobile Team | Staging environment | Crash-free sessions >99.5%; outbox sync success >99.0%; zero `setState` leaks. | Closed beta gate |
+| **M4: Production Deployment** | Phased public release (10% $\to$ 100%), automated kill-switch, store approvals. | 2 Sprints (4 wks) | Mobile Lead | Store compliance | Zero P0/P1 incidents over 7 days at 100% rollout; Play Console approval. | General Availability |
 
 ---
 
-## 3. Architecture & FastAPI Compatibility
-The client interfaces with a FastAPI backend via OpenAPI 3.1 contracts. To prevent breaking changes:
-1. **Contract Compatibility**: Semantic versioning on endpoints (`/api/v1`). Unknown JSON response fields are ignored by schema models.
-2. **Idempotency Guarantee**: Requests carry `X-Operation-Key: <UUIDv4>`. FastAPI persists operation receipts in Redis/Postgres; duplicate keys return identical cached receipts without re-grading.
-3. **Draft Migration**: Local Drift SQLite migrations run atomically on launch inside SQLite transactions (`onUpgrade`), maintaining legacy draft integrity without plaintext leakage.
-
-### Engineering Trade-Off Decisions
-1. **BLoC + GetIt vs. Riverpod**:
-   - *Chosen*: BLoC + GetIt for explicit event streams and lifecycle observability during complex outbox transitions.
-   - *Alternative*: Riverpod (simpler scoping).
-   - *Revisit Trigger*: If presentation boilerplate demonstrably slows junior feature throughput by >25%.
-2. **Foreground-First Bounded Sync vs. Immediate Background Service**:
-   - *Chosen*: Foreground sync bounded to 3 attempts / 10s ceiling with lease recovery.
-   - *Alternative*: Background headless worker (`WorkManager`).
-   - *Revisit Trigger*: If telemetry reveals >5% of submissions remain pending for >24 hours due to immediate app termination.
+## 3. Architecture & Reliability Improvements
+Prioritized engineering mitigations directly addressing observed incident patterns:
+1. **Single-Flight Refresh Mutex**: `AuthInterceptor` coalesces concurrent 401s into a single refresh request, halting login loops and refresh storms.
+2. **Generational BLoC Barriers**: Monotonic counters (`_activeDetailGeneration`, `sessionGeneration`) discard delayed microtasks on route departure or account switch, preventing stale state overwrites.
+3. **Durable Lease-Locked Outbox**: Atomic Drift SQLite transactions transition records (`pending` $\to$ `in_flight` $\to$ `completed`), preventing premature queue erasure and double submission.
+4. **Accessible Wrap Layouts**: Responsive chip wrapping guarantees zero RenderFlex overflows on narrow $320\text{px}$ screens under 200% font scaling.
 
 ---
 
-## 4. Platform Build & Release Checklists
-- **Android Checklist**: Flavor separation (`dev`, `staging`, `prod`); unique `applicationId` (`org.theairman.toga`); target SDK 35; ProGuard/R8 obfuscation enabled; release keystore stored in CI secrets vault; Google Play 16 KB page-size compliance verified; data safety declarations filed.
-- **iOS Checklist**: Bundle ID separation; Fastlane match provisioning with Apple Developer certificate; `NSAppTransportSecurity` enforcing strict TLS 1.3; `kSecAttrAccessibleAfterFirstUnlock` secure storage flag verified; Privacy Manifest (`PrivacyInfo.xcprivacy`) declared.
+## 4. CI/CD Pipeline & Signing Governance
+- **GitHub Actions Gates**:
+  1. *PR Gate*: `dart format --set-exit-if-changed`, `flutter analyze --fatal-infos`, `flutter test --coverage` (100% pass required).
+  2. *Nightly Build*: Android debug compilation and integration tests on synthetic fixtures.
+- **Signing Governance**: Production keys and keystores remain secured in hardware security modules / cloud vaults; local development strictly restricted to debug keys.
 
 ---
 
-## 5. CI/CD Pipeline & Signing Governance
-- **GitHub Actions Pipeline**:
-  1. *PR Gate*: `dart format --output=none --set-exit-if-changed`, `flutter analyze --fatal-infos`, `flutter test --coverage`.
-  2. *Nightly Build*: Integration tests on Android Emulator and macOS iOS Simulator matrix.
-  3. *Release Gate*: Automated semver tagging, changelog generation, release APK/AAB and IPA builds using environment secrets.
-- **Governance**: Only Mobile Lead and Release Manager hold production signing keys and Play Console / App Store Connect submission privileges.
-
----
-
-## 6. Staged Rollout, Telemetry & Stop Criteria
-- **Cadence**: 10% (Day 1) -> 25% (Day 3) -> 50% (Day 5) -> 100% (Day 7).
-- **Telemetry**: Sentry/Crashlytics (crash-free rates), Datadog (outbox latency, retry distribution).
-- **Halt Criteria**: Crash-free sessions <99.0%, ANR rate >0.4%, or sync failure rate >2.0%.
-- **Installed Version Mitigation**: Rollout halt stops new downloads. For installed clients: dynamic remote feature flags disable broken quiz modules, redirecting learners to offline cached reading while forward-fix patches deploy.
-
----
-
-## 7. Incident Response: First 30 Minutes
-- **T+0 to T+5m (Containment)**: On-call engineer halts active store rollout. Engage kill-switch flag if backend is destabilized.
-- **T+5 to T+15m (Triage & Isolation)**: Inspect error signatures in Sentry. Determine whether failure is client crypto/storage corruptions or server 5xx. Isolate affected app versions.
-- **T+15 to T+25m (Stakeholder Escalation)**: Notify Mobile Lead and VP Engineering with blast radius, confirmed facts, and working hypotheses.
-- **T+25 to T+30m (Remediation Path)**: Decide between backend patch, feature flag toggle, or expedited hotfix build.
-- **Handover & Follow-Up**:
-  - *Handover*: Brief customer support with customer-safe guidance (advising learners *not* to clear app storage to preserve encrypted drafts).
-  - *Follow-ups*: Root Cause Analysis (RCA) post-mortem (signal: signed post-mortem document); automated regression test added to CI suite (signal: merged PR).
+## 5. Incident Response & Containment Protocol
+When telemetry alerts fire (crash-free rate <99.0% or refresh call surge >5x baseline):
+1. **T+0 to T+5m**: Freeze rollout; engage client kill-switch to halt outbox polling and conserve battery.
+2. **T+5 to T+15m**: Triage telemetry. Inspect whether failures are platform crypto faults, unmanaged stream leaks, or backend 5xx.
+3. **T+15 to T+25m**: Determine remediation: backend configuration patch, feature flag toggle, or emergency hotfix.
+4. **T+25 to T+30m**: Communicate blast radius to leadership. Advise user support that learners must *not* wipe app storage, preserving encrypted drafts for automatic sync upon forward-fix.

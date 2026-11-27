@@ -1,0 +1,5 @@
+time_ist,build,observed_sessions,crash_free_sessions,crash_free_sessions_pct,auth_refresh_calls,sync_pending_reports,observation
+10:00,prototype_17,80,79,98.8,12,2,baseline before new build
+10:20,beta_18,85,80,94.1,150,15,small beta cohort reports login loops on resume
+10:25,beta_18,90,84,93.3,182,21,one unverified report of previous learner name after account switch
+10:30,beta_18,95,88,92.6,205,26,symbolicated sample includes setState called after dispose

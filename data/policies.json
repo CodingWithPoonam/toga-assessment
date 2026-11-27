@@ -1,0 +1,8 @@
+{
+  "offline_private_access_hours": 24,
+  "max_submission_attempts": 3,
+  "foreground_sync_budget_seconds": 10,
+  "max_original_request_retry_after_refresh": 1,
+  "offline_rule": "Last verified owner and last successful login/refresh time are protected metadata. Offline private access expires after 24 hours; logout or known refresh denial invalidates it. Public lesson cache may remain readable. Online writes always need current server authentication.",
+  "clock": "Use an injected clock for tests; document clock manipulation and offline revocation limitations."
+}

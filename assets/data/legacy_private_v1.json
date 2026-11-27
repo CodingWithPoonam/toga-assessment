@@ -1,0 +1,17 @@
+{
+  "notice": "Insecure legacy seed for migration tests only. Do not adopt as your storage design.",
+  "storage": "ordinary_preferences",
+  "schema_version": 1,
+  "refresh_token": "SYNTHETIC_A_REFRESH_1",
+  "draft": {
+    "owner": "learner_a",
+    "lesson_id": "lesson-units",
+    "content_revision": 1,
+    "position": 2,
+    "answers": {
+      "r1-u1": "1",
+      "r1-u2": "0"
+    }
+  },
+  "outbox": []
+}

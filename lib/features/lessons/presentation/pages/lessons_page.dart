@@ -129,7 +129,11 @@ class _LessonsPageState extends State<LessonsPage> {
                   color: colorScheme.primaryContainer,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Row(
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12.0,
+                      runSpacing: 8.0,
                       children: [
                         CircleAvatar(
                           backgroundColor: colorScheme.primary,
@@ -138,26 +142,25 @@ class _LessonsPageState extends State<LessonsPage> {
                             session?.learner.displayName.substring(0, 1) ?? 'L',
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                session?.learner.displayName ?? 'Learner',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              session?.learner.displayName ?? 'Learner',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onPrimaryContainer,
                               ),
-                              Text(
-                                session?.learner.email ?? '',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
+                            ),
+                            Text(
+                              session?.learner.email ?? '',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
                               ),
-                            ],
-                          ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                         Chip(
                           avatar: const Icon(Icons.shield_outlined, size: 16),
@@ -232,16 +235,18 @@ class _LessonsPageState extends State<LessonsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 8.0,
+                                      runSpacing: 4.0,
                                       children: [
-                                        Expanded(
-                                          child: Text(
-                                            lesson.title,
-                                            style: theme.textTheme.titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
+                                        Text(
+                                          lesson.title,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                         Chip(
                                           label: Text(lesson.revisionId),
@@ -258,30 +263,39 @@ class _LessonsPageState extends State<LessonsPage> {
                                           ),
                                     ),
                                     const SizedBox(height: 12),
-                                    Row(
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 8.0,
+                                      runSpacing: 4.0,
                                       children: [
-                                        Icon(
-                                          lesson.isCached
-                                              ? Icons.offline_pin
-                                              : Icons.cloud_download_outlined,
-                                          size: 16,
-                                          color: lesson.isCached
-                                              ? colorScheme.primary
-                                              : colorScheme.outline,
+                                        Wrap(
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          spacing: 6.0,
+                                          runSpacing: 2.0,
+                                          children: [
+                                            Icon(
+                                              lesson.isCached
+                                                  ? Icons.offline_pin
+                                                  : Icons.cloud_download_outlined,
+                                              size: 16,
+                                              color: lesson.isCached
+                                                  ? colorScheme.primary
+                                                  : colorScheme.outline,
+                                            ),
+                                            Text(
+                                              lesson.isCached
+                                                  ? 'Cached for offline'
+                                                  : 'Available online',
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: lesson.isCached
+                                                        ? colorScheme.primary
+                                                        : colorScheme.outline,
+                                                  ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          lesson.isCached
-                                              ? 'Cached for offline reading'
-                                              : 'Available online',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: lesson.isCached
-                                                    ? colorScheme.primary
-                                                    : colorScheme.outline,
-                                              ),
-                                        ),
-                                        const Spacer(),
                                         Text(
                                           'Read Lesson >',
                                           style: TextStyle(

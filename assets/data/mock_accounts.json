@@ -1,0 +1,19 @@
+{
+  "notice": "Public synthetic fixture credentials only. Never use for a real service.",
+  "accounts": [
+    {
+      "user_id": "learner_a",
+      "access_token": "SYNTHETIC_A_ACCESS_1",
+      "refresh_token": "SYNTHETIC_A_REFRESH_1",
+      "rotated_access_token": "SYNTHETIC_A_ACCESS_2",
+      "rotated_refresh_token": "SYNTHETIC_A_REFRESH_2"
+    },
+    {
+      "user_id": "learner_b",
+      "access_token": "SYNTHETIC_B_ACCESS_1",
+      "refresh_token": "SYNTHETIC_B_REFRESH_1",
+      "rotated_access_token": "SYNTHETIC_B_ACCESS_2",
+      "rotated_refresh_token": "SYNTHETIC_B_REFRESH_2"
+    }
+  ]
+}

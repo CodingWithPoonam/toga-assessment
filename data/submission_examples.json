@@ -1,0 +1,28 @@
+{
+  "request": {
+    "session_id": "sample-session-a",
+    "lesson_id": "lesson-units",
+    "content_revision": 1,
+    "answers": {
+      "r1-u1": "1",
+      "r1-u2": "0",
+      "r1-u3": "1",
+      "r1-u4": "0",
+      "r1-u5": "0"
+    }
+  },
+  "headers": {
+    "Idempotency-Key": "sample-operation-a"
+  },
+  "acknowledgement": {
+    "submission_id": "sample-ack-a",
+    "session_id": "sample-session-a",
+    "user_id": "learner_a",
+    "lesson_id": "lesson-units",
+    "content_revision": 1,
+    "accepted_count": 5,
+    "score": 5,
+    "total": 5,
+    "status": "accepted"
+  }
+}

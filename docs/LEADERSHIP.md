@@ -1,64 +1,48 @@
-# Technical Leadership, Team Guidance & Incident Management
+# Technical Leadership & Incident Governance
 
-## 1. Iteration Planning (Sprint Backlog)
-Four ordered two-week iteration tickets for closed beta readiness:
-1. **TOGA-101: Native Keystore / Keychain Hardware Key-Wrap Integration**  
-   *Owner*: Junior Engineer 2 | *Reviewer*: Mobile Lead  
-   *Outcome*: Secure AES key storage using Android KeyStore & iOS Keychain HSM.  
-   *Dependency*: None | *Acceptance Evidence*: Passing unit tests verifying key generation and fallback rejection.
-2. **TOGA-102: Lesson Markdown Renderer & Dynamic Typography**  
+## 1. Incident Analysis & Team Guidance (`beta_18` Regression)
+During the `beta_18` phased rollout (`data/incident_observations.csv`), telemetry degraded sharply between 10:00 and 10:30 IST across 95 observed sessions:
+- **Crash Rate**: Crash-free sessions fell from **98.8%** (79/80) to **92.6%** (88/95), representing a 7x increase in crashes (1 $\to$ 7).
+- **Refresh Surge**: Auth refresh calls spiked by **1608.3%** (12 $\to$ 205 calls), triggering user-reported "login loops on resume".
+- **Outbox Stalling**: Pending sync submissions accumulated from 2 to 26 (+1200%).
+- **Error Signatures**: A symbolicated crash confirmed `setState called after dispose`, while one unverified report cited seeing a previous learner's name after switching accounts.
+
+### Engineering Grounding & Bounds
+As Technical Lead, I coached the team on interpreting telemetry rigorously:
+1. **Correlation vs. Causation**: While telemetry correlates `beta_18` with crash increases, it cannot establish direct causality without stack-trace aggregation.
+2. **Unverified Claims**: The single learner-name report cannot distinguish between client-side BLoC state carryover and backend session aliasing without session trace logs.
+3. **Actionable Remediation**: Prioritize verified root causes: implement single-flight refresh mutexes, generational state counters, and mandatory `StreamSubscription.cancel()` on dispose.
+
+---
+
+## 2. Iteration Planning (Hardened Sprint Backlog)
+Four ordered sprint backlog items targeting verified reliability gaps:
+1. **TOGA-201: Single-Flight Refresh Mutex & Circuit Breaker**  
+   *Owner*: Mobile Lead | *Reviewer*: Backend Lead  
+   *Outcome*: Coalesce concurrent 401s into one isolated refresh call; halt recursive loops on revoked tokens.  
+   *Acceptance*: Zero refresh loop regressions under 401 fault injection in integration tests.
+2. **TOGA-202: Generational Lifecycle & Subscription Governance**  
    *Owner*: Junior Engineer 1 | *Reviewer*: Mobile Lead  
-   *Outcome*: Accessible lesson rendering supporting dynamic scaling (200%) and dark mode.  
-   *Dependency*: Lesson repository | *Acceptance Evidence*: Golden widget tests for screen sizes 320dp to 768dp.
-3. **TOGA-103: OS Background Sync Worker via WorkManager**  
+   *Outcome*: Enforce monotonic generation counters in `LessonBloc` and audit all stream listeners for disposal.  
+   *Acceptance*: Zero `setState` warnings and verified stale-response discarding during rapid route switching.
+3. **TOGA-203: Durable Outbox Lease Recovery**  
    *Owner*: Junior Engineer 2 | *Reviewer*: Mobile Lead  
-   *Outcome*: Headless background trigger invoking `GetIt<ISyncEngine>()` on reconnect.  
-   *Dependency*: TOGA-101 | *Acceptance Evidence*: Outbox drain verified in battery-saver mode.
-4. **TOGA-104: OpenAPI 3.1 Contract Ingestion & Mock Adapter Swap**  
-   *Owner*: Shared Backend + Mobile Lead | *Reviewer*: QA Engineer  
-   *Outcome*: Verified serialization against production FastAPI `/v1/submissions`.  
-   *Dependency*: Backend staging deploy | *Acceptance Evidence*: Zero contract mismatch errors in CI matrix.
+   *Outcome*: Automatic recovery of `in_flight` submissions whose lease exceeds 30s.  
+   *Acceptance*: Unacknowledged submissions reliably re-queued without duplicate execution.
+4. **TOGA-204: Accessible Typography & Narrow Layout Audit**  
+   *Owner*: Junior Engineer 1 | *Reviewer*: Mobile Lead  
+   *Outcome*: Replace rigid Row layouts with responsive Wrap widgets across all study and quiz views.  
+   *Acceptance*: Clean rendering without overflow at 200% font scaling on $320\text{px}$ viewports.
 
 ---
 
-## 2. Ownership & Delegation
-- **Lead Ownership**: Security boundaries, SQLite schema evolution, cryptographic AAD, sync engine idempotency.
-- **Delegation**: Feature layouts, widget tests, and platform packaging are delegated with strict interface contracts.
-- **Unblocking Example**: Paired with a junior experiencing SQLite test locking; resolved by demonstrating Drift's in-memory executor pooling.
+## 3. Code Review & Mentorship Practice
+When reviewing flawed pull requests (such as `review/legacy_auth.dart` and `review/legacy_sync.dart`), mentorship focuses on foundational invariants:
+- **Security**: *"Never bypass TLS validation (`badCertificateCallback`) or log auth headers to stdout. Why does an isolated refresh client prevent recursive interceptor loops?"*
+- **Reliability**: *"Never delete pending submissions before network confirmation. Why must the idempotency key be generated once at staging and preserved across retries?"*
+- **Lifecycle**: *"Why does `mounted` alone fail to protect multi-tenant state if an account switch occurs during an await?"*
 
 ---
 
-## 3. Code Reviews (Supplied Flawed Excerpts)
-*(Raw excerpts withheld from workspace materials; reviews address canonical assessment design risks [PROVISIONAL_EXCERPT_PLACEHOLDER]).*
-
-### Review 1: Lifecycle & Stale Rebuild (`QuizView.dart`)
-> **Comment**: "Reading `context.read<AuthBloc>()` across an async gap without account validation risks rendering stale data.  
-> **Consequence**: Cross-account data leakage in the UI if the learner switches mid-flight.  
-> **Correction**: Bind to `BlocConsumer` and verify `state.activeLearnerId == currentLearnerId`.  
-> **Teaching Question**: How does the event-loop microtask queue affect widget state when a route pops mid-await?"
-
-### Review 2: Security & Token Storage (`AuthService.dart`)
-> **Comment**: "Writing ephemeral access tokens to `SharedPreferences` exposes credentials on rooted devices and OS backups.  
-> **Consequence**: Token exfiltration without sandbox protection.  
-> **Correction**: Retain access tokens in memory (`SessionManager`), storing only refresh tokens in secure storage.  
-> **Teaching Question**: Why does in-memory scoping minimize backup exfiltration risk?"
-
----
-
-## 4. Coaching on Submission Idempotency
-When a junior proposed clearing the queue before calling the API and generating a new UUID on retry:
-1. **Pair on a Failing Test**: Simulate dropped connection after server acceptance.
-2. **Demonstrate Failure**: The new UUID causes duplicate evaluation; early queue clearance destroys unacknowledged submissions.
-3. **Resolve Constructively**: Walk through RFC 4122 v4 keys and atomic SQLite commits to align on data durability.
-
----
-
-## 5. Founder Incident Update (Max 120 Words)
-> "At 14:15 UTC, mobile release v1.2.0 exhibited submission sync failures impacting 45 active learners. **Impact**: Submitted quizzes remain safely pending locally; zero learner data was lost due to encrypted SQLite persistence. **Unknowns**: Investigating backend schema changes vs. client lease expirations. **Containment**: Rollout halted at 0%; app kill-switch activated to pause retries and preserve battery. **Ownership**: Mobile Lead (Incident Commander). **Next Update**: 15:00 UTC with root-cause confirmation and hotfix schedule."
-
----
-
-## 6. Privacy, Deferred Features & AI Governance
-- **QA/Support Privacy**: Test accounts use synthetic fixtures; production telemetry strips PII, tokens, and quiz answers.
-- **Deferred Feature**: Live leaderboards deferred until outbox stability exceeds 99.9% across 10,000 sessions.
-- **AI Governance**: AI suggestions require manual verification, 100% test coverage, and human lead accountability.
+## 4. Founder & Stakeholder Incident Communication (110 Words)
+> "At 10:30 IST, rollout of `beta_18` was halted at 95 sessions due to telemetry alerts: crash-free sessions dipped to 92.6% (7 crashes) and auth refresh volume surged to 205 calls due to token refresh loops. **Learner Data Impact**: Zero progress loss. All student quiz drafts remain securely encrypted in local SQLite storage. **Containment**: Active deployment paused; kill-switch engaged to stop polling. **Root Cause**: Identified recursive 401 interceptor loops and unmanaged widget subscriptions. **Remediation**: Hotfix `beta_19` deploying at 12:00 IST with single-flight refresh mutexes and generational lifecycle guards. Next update at 11:30 IST."

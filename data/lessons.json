@@ -1,0 +1,298 @@
+{
+  "lessons": [
+    {
+      "lesson_id": "lesson-units",
+      "content_revision": 1,
+      "title": "Aviation study units",
+      "body": "Synthetic TOGA hiring exercise content. Learn the listed units, then complete five questions. This is not operational flight guidance.",
+      "questions": [
+        {
+          "question_id": "r1-u1",
+          "prompt": "How many minutes are in one hour?",
+          "options": [
+            {
+              "id": "0",
+              "text": "30"
+            },
+            {
+              "id": "1",
+              "text": "60"
+            },
+            {
+              "id": "2",
+              "text": "100"
+            }
+          ]
+        },
+        {
+          "question_id": "r1-u2",
+          "prompt": "Which quantity is measured in metres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Length"
+            },
+            {
+              "id": "1",
+              "text": "Time"
+            },
+            {
+              "id": "2",
+              "text": "Mass"
+            }
+          ]
+        },
+        {
+          "question_id": "r1-u3",
+          "prompt": "Which quantity is measured in litres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Volume"
+            },
+            {
+              "id": "2",
+              "text": "Distance"
+            }
+          ]
+        },
+        {
+          "question_id": "r1-u4",
+          "prompt": "Which quantity is measured in knots?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Mass"
+            },
+            {
+              "id": "2",
+              "text": "Time"
+            }
+          ]
+        },
+        {
+          "question_id": "r1-u5",
+          "prompt": "What does UTC stand for?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Coordinated Universal Time"
+            },
+            {
+              "id": "1",
+              "text": "Universal Training Count"
+            },
+            {
+              "id": "2",
+              "text": "Unit Time Clock"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "lesson_id": "lesson-units",
+      "content_revision": 2,
+      "title": "Aviation study units revised",
+      "body": "Synthetic TOGA hiring exercise content. Learn the listed units, then complete five questions. This is not operational flight guidance.",
+      "questions": [
+        {
+          "question_id": "r2-u1",
+          "prompt": "How many minutes are in one hour?",
+          "options": [
+            {
+              "id": "0",
+              "text": "30"
+            },
+            {
+              "id": "1",
+              "text": "60"
+            },
+            {
+              "id": "2",
+              "text": "100"
+            }
+          ]
+        },
+        {
+          "question_id": "r2-u2",
+          "prompt": "Which quantity is measured in metres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Length"
+            },
+            {
+              "id": "1",
+              "text": "Time"
+            },
+            {
+              "id": "2",
+              "text": "Mass"
+            }
+          ]
+        },
+        {
+          "question_id": "r2-u3",
+          "prompt": "Which quantity is measured in litres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Volume"
+            },
+            {
+              "id": "2",
+              "text": "Distance"
+            }
+          ]
+        },
+        {
+          "question_id": "r2-u4",
+          "prompt": "Which quantity is measured in knots?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Mass"
+            },
+            {
+              "id": "2",
+              "text": "Time"
+            }
+          ]
+        },
+        {
+          "question_id": "r2-u5",
+          "prompt": "What does UTC stand for?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Coordinated Universal Time"
+            },
+            {
+              "id": "1",
+              "text": "Universal Training Count"
+            },
+            {
+              "id": "2",
+              "text": "Unit Time Clock"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "lesson_id": "lesson-practice",
+      "content_revision": 1,
+      "title": "Practice with units",
+      "body": "Synthetic TOGA hiring exercise content. Learn the listed units, then complete five questions. This is not operational flight guidance.",
+      "questions": [
+        {
+          "question_id": "p1-u1",
+          "prompt": "How many minutes are in one hour?",
+          "options": [
+            {
+              "id": "0",
+              "text": "30"
+            },
+            {
+              "id": "1",
+              "text": "60"
+            },
+            {
+              "id": "2",
+              "text": "100"
+            }
+          ]
+        },
+        {
+          "question_id": "p1-u2",
+          "prompt": "Which quantity is measured in metres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Length"
+            },
+            {
+              "id": "1",
+              "text": "Time"
+            },
+            {
+              "id": "2",
+              "text": "Mass"
+            }
+          ]
+        },
+        {
+          "question_id": "p1-u3",
+          "prompt": "Which quantity is measured in litres?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Volume"
+            },
+            {
+              "id": "2",
+              "text": "Distance"
+            }
+          ]
+        },
+        {
+          "question_id": "p1-u4",
+          "prompt": "Which quantity is measured in knots?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Speed"
+            },
+            {
+              "id": "1",
+              "text": "Mass"
+            },
+            {
+              "id": "2",
+              "text": "Time"
+            }
+          ]
+        },
+        {
+          "question_id": "p1-u5",
+          "prompt": "What does UTC stand for?",
+          "options": [
+            {
+              "id": "0",
+              "text": "Coordinated Universal Time"
+            },
+            {
+              "id": "1",
+              "text": "Universal Training Count"
+            },
+            {
+              "id": "2",
+              "text": "Unit Time Clock"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

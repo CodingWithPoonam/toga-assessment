@@ -107,6 +107,59 @@ class QuizLocalDataSource {
     });
   }
 
+  /// Atomically commits an entire quiz draft and batch-encrypts all answers in a single transaction
+  Future<void> saveDraftAtomically({
+    required String learnerId,
+    required String lessonId,
+    required String revisionId,
+    required int currentQuestionIndex,
+    required Map<String, String> answers,
+  }) async {
+    final draftId = '${learnerId}_$lessonId';
+    final now = DateTime.now();
+
+    final encryptedAnswers = <String, String>{};
+    for (final entry in answers.entries) {
+      final aad = '$learnerId:$lessonId:$revisionId:${entry.key}';
+      final encryptedOption = await encryptionService.encrypt(
+        plainText: entry.value,
+        associatedData: aad,
+      );
+      encryptedAnswers[entry.key] = encryptedOption;
+    }
+
+    await database.transaction(() async {
+      await database
+          .into(database.quizDrafts)
+          .insertOnConflictUpdate(
+            QuizDraftsCompanion(
+              id: Value(draftId),
+              learnerId: Value(learnerId),
+              lessonId: Value(lessonId),
+              revisionId: Value(revisionId),
+              currentQuestionIndex: Value(currentQuestionIndex),
+              isSubmitted: const Value(false),
+              updatedAt: Value(now),
+            ),
+          );
+
+      for (final entry in encryptedAnswers.entries) {
+        final answerId = '${draftId}_${entry.key}';
+        await database
+            .into(database.quizAnswers)
+            .insertOnConflictUpdate(
+              QuizAnswersCompanion(
+                id: Value(answerId),
+                draftId: Value(draftId),
+                questionId: Value(entry.key),
+                encryptedSelectedOptionId: Value(entry.value),
+                updatedAt: Value(now),
+              ),
+            );
+      }
+    });
+  }
+
   /// Updates question position without re-encrypting existing answers
   Future<void> updatePosition({
     required String learnerId,

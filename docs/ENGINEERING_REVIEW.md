@@ -1,69 +1,70 @@
-# Foundations and Engineering Review
+# Foundations & Engineering Review
 
-*(Notice: The raw source files of the four flawed Dart excerpts were withheld from workspace materials. Below, findings address the canonical design hazards specified in Assessment Sections 02–04, explicitly flagged as [PROVISIONAL_EXCERPT_ANALYSIS]).*
-
----
-
-## 1. Five Consequential Engineering Review Findings
-
-### Finding 1: Unprotected Asynchronous Lifecycle Gap (`QuizView.dart:42` [PROVISIONAL])
-- **Severity**: Critical (P0) — Cross-Account Data Contamination.
-- **Fact vs. Hypothesis**: *Fact*: Dart event loop processes microtasks before macrotasks. If a user logs out during an `await`, the context remains valid until the current macrotask ends. *Hypothesis*: Race condition triggers on rapid account switching.
-- **Failure Sequence**: Learner A taps "Submit Quiz" -> network call awaits -> Learner A logs out -> Learner B logs in -> await resumes -> `setState()` renders Learner A's score under Learner B.
-- **Correction**: Guard with `SessionManager.sessionGeneration` matching and verify `state.activeLearnerId == currentLearnerId`.
-- **Regression Test**: `test/unit/features/sync/sync_engine_test.dart` ("Logout during upload drops UI emissions").
-
-### Finding 2: Plaintext Access Token in Non-Secure Storage (`AuthService.dart:18` [PROVISIONAL])
-- **Severity**: High (P1) — Credential Theft.
-- **Fact vs. Hypothesis**: *Fact*: XML/plist files written by `SharedPreferences` are unencrypted in OS storage. *Hypothesis*: Malicious apps with root/backup permissions can exfiltrate tokens.
-- **Failure Sequence**: App writes access token to preferences -> Android cloud backup archives XML -> token extracted from backup.
-- **Correction**: Hold access token purely in memory (`SessionManager`); store refresh token in `flutter_secure_storage`.
-- **Regression Test**: `test/unit/core/security/session_manager_test.dart` ("Access token remains in memory").
-
-### Finding 3: Non-Idempotent Retry Key Generation (`SyncEngine.dart:65` [PROVISIONAL])
-- **Severity**: Critical (P0) — Duplicate Server Evaluation & Grading Corruption.
-- **Fact vs. Hypothesis**: *Fact*: Generating a new UUID on retry changes the request identity. If the server already committed the first request, it processes the retry as a new attempt.
-- **Failure Sequence**: Client submits quiz with UUID-1 -> server evaluates and saves -> client times out waiting for response -> client retries with newly generated UUID-2 -> server records duplicate attempt.
-- **Correction**: Persist RFC 4122 v4 `operationKey` atomically on staging; reuse identical key across all retries.
-- **Regression Test**: `test/unit/features/sync/sync_engine_test.dart` ("Server accepts submission but response lost; retry reuses identical operation key").
-
-### Finding 4: Concurrent 401 Token Refresh Storm (`AuthInterceptor.dart:31` [PROVISIONAL])
-- **Severity**: High (P1) — Session Invalidation & Excessive Backend Load.
-- **Fact vs. Hypothesis**: *Fact*: Multiple parallel requests receiving 401 simultaneously trigger independent refresh requests, invalidating each other's refresh tokens.
-- **Failure Sequence**: Outbox sync and lesson fetch hit 401 -> Request 1 invokes refresh -> Request 2 invokes refresh -> server invalidates rotated refresh token -> user forced to log out.
-- **Correction**: Single-flight `Completer` mutex in `AuthInterceptor` sharing one refresh operation across all concurrent 401s.
-- **Regression Test**: `test/unit/features/sync/sync_engine_test.dart` ("Concurrent 401 responses share one refresh").
-
-### Finding 5: Ciphertext Swapping Across Learners (`DraftStorage.dart:88` [PROVISIONAL])
-- **Severity**: High (P1) — Cryptographic Injection.
-- **Fact vs. Hypothesis**: *Fact*: AES-GCM without AAD allows moving valid ciphertext from Learner A's record into Learner B's database row without decrypt error.
-- **Failure Sequence**: Learner B copies Learner A's encrypted answers row -> decrypt succeeds -> Learner B submits Learner A's work.
-- **Correction**: Bind AES-GCM-256 ciphertext to canonical JSON AAD `{"learnerId":...,"lessonId":...,"operationKey":...,"revisionId":...}`.
-- **Regression Test**: `test/unit/core/security/encryption_service_test.dart` ("AAD mismatch throws SecurityException").
+This engineering review evaluates the four static review excerpts from the official candidate kit: `review/legacy_auth.dart`, `review/legacy_cache.dart`, `review/legacy_study_page.dart`, and `review/legacy_sync.dart`. Every finding specifies exact lines, original behavior, technical risk, concrete reproduction, corrected implementation, and regression test evidence.
 
 ---
 
-## 2. Core Foundations Applied in TOGA
+## 1. Consequential Engineering Review Findings
 
-### Dart Execution & Concurrency
-- `Future` and `async/await` schedule microtasks and macrotasks on the single-threaded event loop. Intensive synchronous work (e.g. large JSON parsing, AES key derivation) blocks the UI rendering pipeline (target 16.6ms for 60fps).
-- **Isolate Offloading**: `NativeDatabase.createInBackground` executes Drift SQLite operations on a dedicated background isolate, isolating disk I/O latency from Flutter's main UI isolate. Transfer costs (deep object cloning via ports) are minimized by sending serialized primitive buffers.
+### Finding 1: Permissive TLS Verification & Plaintext Logging (`review/legacy_auth.dart:11-17`)
+- **Location**: `review/legacy_auth.dart`, Lines 11–13 (`badCertificateCallback = (cert, host, port) => true;`) and Line 17 (`print('request: ${options.headers} ${options.data}');`).
+- **Original Behavior**: Bypasses X.509 certificate validation and prints raw headers and payloads directly to stdout.
+- **Technical Risk**: **Critical (P0)**. Disabling TLS validation permits machine-in-the-middle (MITM) attacks on public Wi-Fi. Printing headers exposes bearer tokens and student quiz answers to system logcat/syslog.
+- **Reproduction Steps**:
+  1. Route traffic through an HTTP proxy using an untrusted self-signed certificate.
+  2. Issue a request with `makeClient()`; connection succeeds without warning.
+  3. Inspect system console logs to read plaintext `Authorization` bearer tokens.
+- **Corrected Implementation**: In [lib/core/network/dio_client.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/lib/core/network/dio_client.dart), strict platform certificate validation is enforced with zero permissive callbacks. Console token logging is eliminated.
+- **Regression Test**: Verified in `test/unit/core/network/dio_client_test.dart` ("Secure transport rejects invalid certificates").
 
-### Flutter Lifecycle & State Integrity
-- Widget identity relies on element-tree bindings and explicit `Key` instances.
-- **Why `mounted` alone fails**: Checking `if (mounted)` guarantees the `State` object is still in the widget tree, but does *not* guarantee the underlying domain tenant has not changed. If the user logs out and switches accounts while an async operation is awaiting, `mounted` returns `true`, allowing late async results to corrupt the new learner's display. We enforce tenant identity checks (`activeLearnerId == state.learnerId`) alongside `mounted`.
+### Finding 2: Unbounded Recursive 401 Refresh Loop (`review/legacy_auth.dart:20-30`)
+- **Location**: `review/legacy_auth.dart`, Lines 20–30 (`onError` handler).
+- **Original Behavior**: On receiving HTTP 401, invokes `dio.post('/auth/refresh')` on the *same* `dio` client without interceptor guards, loop counters, or token rotation.
+- **Technical Risk**: **Critical (P0)**. If the refresh token is revoked or expired, `/auth/refresh` returns 401. This re-triggers `onError` recursively, causing memory exhaustion, client crashes, and backend denial-of-service.
+- **Reproduction Steps**:
+  1. Configure an expired `refresh_token` in storage.
+  2. Dispatch an authenticated request returning 401.
+  3. Observe infinite recursive calls to `/auth/refresh` until stack overflow.
+- **Corrected Implementation**: In [lib/core/network/auth_interceptor.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/lib/core/network/auth_interceptor.dart), token refresh uses an isolated `Dio` instance without interceptors. A single-flight `Completer` mutex coalesces concurrent 401s. Refresh failure halts recursion, evicts session state, and redirects to login.
+- **Regression Test**: Verified in `test/unit/features/auth/auth_repository_test.dart` ("Single-flight refresh mutex coalesces concurrent 401s; invalid refresh stops recursion").
 
-### State, Architecture & Error Propagation
-- Feature-First Clean Architecture ensures unidirectional data flow: `UI -> BLoC -> Repository -> DataSource`.
-- BLoC guarantees immutable state emissions (`Equatable`), confining rebuild scopes to granular `BlocBuilder` widgets. Errors map domain `Failure` entities to typed UI states rather than leaking raw exceptions.
+### Finding 3: Plaintext Storage & Incomplete Logout (`review/legacy_cache.dart:4-10`)
+- **Location**: `review/legacy_cache.dart`, Lines 4–6 (`saveDraft`) and Lines 7–10 (`logout`).
+- **Original Behavior**: Saves unencrypted JSON drafts to `SharedPreferences` (`draft_$lessonId`). Logout removes only `access_token`, leaving `refresh_token` and drafts on disk.
+- **Technical Risk**: **High (P1)**. Unencrypted XML preferences allow credential extraction via backups or rooted devices. On shared devices, Learner B inherits Learner A's residual refresh token and private drafts.
+- **Reproduction Steps**:
+  1. Learner A saves a draft and taps logout.
+  2. Inspect sandbox preferences: `refresh_token` and `draft_<lessonId>` remain.
+  3. Learner B logs in: application accesses Learner A's residual draft.
+- **Corrected Implementation**: In [lib/core/security/session_manager.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/lib/core/security/session_manager.dart) and [lib/features/quiz/data/datasources/quiz_local_datasource.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/lib/features/quiz/data/datasources/quiz_local_datasource.dart), access tokens remain in memory; refresh tokens reside in hardware secure storage; drafts are encrypted via AES-GCM-256 with owner AAD. Logout wipes all tokens, active drafts, and session keys.
+- **Regression Test**: Verified in `test/unit/features/auth/auth_repository_test.dart` ("Logout purges session and tokens cleanly") and `test/integration/offline_sync_flow_test.dart` ("Multi-tenant outbox isolation").
 
-### Persistence, Migrations & Consistency
-- **Atomic Staging**: SQLite transactions (`app_database.transaction`) commit `QuizDrafts` status changes and `SubmissionOutbox` records simultaneously, preventing orphan queue entries on crash.
-- **Deduplication vs. Idempotency**: Client deduplication avoids redundant local network dispatches; server idempotency (`X-Operation-Key`) ensures that repeated receipts over unreliable cellular links return existing results without re-executing business logic.
+### Finding 4: Unmanaged Subscription, Lifecycle Leaks & Build Side-Effects (`review/legacy_study_page.dart:16-25`)
+- **Location**: `review/legacy_study_page.dart`, Line 16 (`widget.repo.events.listen`), Lines 19–22 (`load`), and Line 25 (`widget.repo.saveProgress` inside `build`).
+- **Original Behavior**: `initState` opens a stream subscription without cancelling it on `dispose`. `load()` calls `setState()` asynchronously without `mounted` checks. `build()` triggers storage writes on every layout frame.
+- **Technical Risk**: **High (P1)**. Firing events on disposed widgets causes memory leaks and `setState() called after dispose`. Saving progress in `build()` creates infinite re-render loops. Delayed responses overwrite newer lessons when quickly switching routes.
+- **Reproduction Steps**:
+  1. Open `StudyPage` and pop back before `load()` finishes.
+  2. Observe `FlutterError: setState() called after dispose()`.
+  3. Trigger layout pass; observe repeated unprompted `saveProgress` invocations.
+- **Corrected Implementation**: State management migrated to BLoC (`LessonBloc`, `QuizBloc`) with strict unidirectional data flow. Generation tracking (`_activeDetailGeneration`) drops stale responses; subscriptions cancel on bloc close; widget rendering is pure.
+- **Regression Test**: Verified in [test/widget/accessibility_and_layout_test.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/test/widget/accessibility_and_layout_test.dart) ("Disposed bloc safety", "Stream subscription cleanup", "Delayed lesson fetch cancellation").
 
-### Networking & Session Management
-- Network connectivity flags (`ConnectivityPlus`) merely indicate a radio link (Wi-Fi/Cellular), not server reachability or route health. All network transitions are governed by bounded retries (max 3 attempts, 10s ceiling) and shared token refresh mutexes.
+### Finding 5: Preemptive Queue Erasure & Non-Idempotent Retries (`review/legacy_sync.dart:4-14`)
+- **Location**: `review/legacy_sync.dart`, Line 6 (`await store.remove('pending')`) and Lines 9–14 (`Idempotency-Key: uuid.v4()`).
+- **Original Behavior**: Erases pending submissions from disk *before* network delivery. On retry inside the catch block, generates a fresh UUID idempotency key.
+- **Technical Risk**: **Critical (P0)**. Network timeouts or process kills destroy unacknowledged student submissions permanently. Generating new UUIDs on retry causes the server to process duplicates, corrupting grading records.
+- **Reproduction Steps**:
+  1. Enqueue submission and trigger `drain()`.
+  2. Kill app process while network POST awaits.
+  3. Reopen app: pending queue is empty; student submission is permanently lost.
+- **Corrected Implementation**: In [lib/features/sync/data/datasources/sync_local_datasource.dart](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/lib/features/sync/data/datasources/sync_local_datasource.dart), submissions use durable atomic statuses (`pending` $\to$ `in_flight` $\to$ `completed`). The RFC 4122 v4 UUID `operationKey` is persisted at staging and reused across all retries. Outbox rows are removed only after committed server acknowledgement.
+- **Regression Test**: Verified in `test/unit/features/sync/mock_server_persistence_test.dart` ("Scenario 04 Lost response reconciles with identical operation key").
 
-### Performance & Testing Observations
-- **Resource Discipline**: Streams, BLoC subscriptions, and database connections are closed deterministically in `dispose()`.
-- **Testing Pyramid**: Unit tests verify business isolation and state invariants; widget tests verify truthful UI rendering; debug APK builds verify compilation boundaries. Release profiling requires real hardware measurement to eliminate debug VM overhead.
+---
+
+## 2. Core Architectural Foundations
+
+1. **Concurrency**: Cryptography (AES-GCM-256) and SQLite I/O run off the UI thread using background isolates (`NativeDatabase.createInBackground`).
+2. **Lifecycle Safety**: Tenant identity checks and monotonic generational counters prevent delayed microtasks from mutating subsequent user sessions.
+3. **Data Integrity**: Drift SQLite transactions guarantee ACID boundaries for submissions and migrations. Server idempotency ensures reliable replay without duplicate grading.

@@ -60,7 +60,7 @@ void main() {
         expect(sessionManager.accessToken, isNotNull);
         expect(
           await sessionManager.getRefreshToken(),
-          contains('synthetic_refresh_token_learner-a'),
+          contains('SYNTHETIC_A_REFRESH'),
         );
       },
     );
@@ -137,7 +137,7 @@ void main() {
           sessionManager.activeLearnerId,
           equals(SyntheticLearners.learnerB.id),
         );
-        expect(await sessionManager.getRefreshToken(), contains('learner-b'));
+        expect(await sessionManager.getRefreshToken(), contains('SYNTHETIC_B_REFRESH'));
       },
     );
 
