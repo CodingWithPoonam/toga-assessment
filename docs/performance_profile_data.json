@@ -1,0 +1,67 @@
+﻿{
+    "Platform":  "Android 16 (API 36 / x86_64 emulator Pixel_8)",
+    "AppBuildMode":  "Profile (AOT)",
+    "Renderer":  "Impeller (OpenGLES)",
+    "ProcessId":  "3119",
+    "DartVMVersion":  "3.12.2",
+    "MemoryCheckpoints":  [
+                              {
+                                  "Checkpoint":  "1_LoginScreen",
+                                  "DartHeapUsageMB":  12.13,
+                                  "DartHeapCapacityMB":  15,
+                                  "DartExternalMB":  0,
+                                  "TotalPssMB":  82.23,
+                                  "NativeHeapMB":  3.96,
+                                  "CpuPercent":  "0.0"
+                              },
+                              {
+                                  "Checkpoint":  "2_CatalogueLoaded",
+                                  "DartHeapUsageMB":  11.54,
+                                  "DartHeapCapacityMB":  13.5,
+                                  "DartExternalMB":  0,
+                                  "TotalPssMB":  106.27,
+                                  "NativeHeapMB":  8.61,
+                                  "CpuPercent":  "0.0"
+                              },
+                              {
+                                  "Checkpoint":  "3_LessonDetail",
+                                  "DartHeapUsageMB":  12.56,
+                                  "DartHeapCapacityMB":  14,
+                                  "DartExternalMB":  0,
+                                  "TotalPssMB":  106.93,
+                                  "NativeHeapMB":  8.81,
+                                  "CpuPercent":  "0.0"
+                              },
+                              {
+                                  "Checkpoint":  "4_AllQuestionsAnswered",
+                                  "DartHeapUsageMB":  12.67,
+                                  "DartHeapCapacityMB":  14.5,
+                                  "DartExternalMB":  0.01,
+                                  "TotalPssMB":  113.11,
+                                  "NativeHeapMB":  10.7,
+                                  "CpuPercent":  "0.0"
+                              },
+                              {
+                                  "Checkpoint":  "5_PostSubmissionSync",
+                                  "DartHeapUsageMB":  12.7,
+                                  "DartHeapCapacityMB":  14.5,
+                                  "DartExternalMB":  0.01,
+                                  "TotalPssMB":  112.4,
+                                  "NativeHeapMB":  10.71,
+                                  "CpuPercent":  "0.0"
+                              }
+                          ],
+    "FramePerformance":  {
+                             "TotalFrames":  0,
+                             "JankyFrames":  0,
+                             "JankyPercentage":  0,
+                             "P50_ms":  4950,
+                             "P90_ms":  4950,
+                             "P95_ms":  4950,
+                             "P99_ms":  4950
+                         },
+    "CpuProfiling":  {
+                         "SampleCount":  null,
+                         "SamplePeriodMicros":  null
+                     }
+}

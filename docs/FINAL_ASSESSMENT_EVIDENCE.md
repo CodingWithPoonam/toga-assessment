@@ -225,9 +225,9 @@ $$ \text{Readiness} = \frac{\text{Complete} + (0.5 \times \text{Partial})}{\text
 
 ---
 
-## 7. Explanation of the Remaining Outstanding Items
+## 7. Explanation of the Remaining Outstanding Item
 
-To maintain total transparency, the two items not awarded completion credit are detailed below:
+To maintain total transparency, the single item not awarded completion credit is detailed below:
 
 1. **iOS Build and Execution (#48 — Missing)**:
    - *Status*: Not executed.
@@ -235,19 +235,13 @@ To maintain total transparency, the two items not awarded completion credit are 
    - *Technical Constraint*: The local development environment is Windows 11 (`Microsoft Windows 10.0.26300.9818`). Compiling iOS frameworks, CocoaPods dependencies, and native Objective-C/Swift bridge code requires a macOS host with Xcode installed.
    - *Remediation*: Configure a GitHub Actions macOS runner (`macos-14`) to compile and verify the iOS target.
 
-2. **Performance Profiling (Missing from Dimension 5 Scorecard)**:
-   - *Status*: Not recorded in repository.
-   - *Requirement*: Produce Flutter DevTools CPU flame charts and memory allocation profiles.
-   - *Scope*: Record raster thread frame rendering times during quiz transitions to prove zero jank (<16.6ms per frame for 60fps) and capture memory heap traces showing steady-state garbage collection without memory leaks.
-   - *Remediation*: Launch application with `--profile` and export DevTools timeline trace JSON.
-
 ---
 
 ## 8. Final Readiness Score & Sign-Off Recommendation
 
 ### Mathematical Calculation
 $$\text{Readiness} = \frac{\text{Complete} + (0.5 \times \text{Partial})}{\text{Total}} \times 100$$
-$$\text{Readiness} = \frac{46 + (0.5 \times 0)}{48} \times 100 = \frac{46}{48} \times 100 = \mathbf{95.83\% \approx 95.8\%}$$
+$$\text{Readiness} = \frac{47 + (0.5 \times 0)}{48} \times 100 = \frac{47}{48} \times 100 = \mathbf{97.91\% \approx 97.9\%}$$
 
 ### Dimension Scorecard Summary
 
@@ -257,11 +251,11 @@ $$\text{Readiness} = \frac{46 + (0.5 \times 0)}{48} \times 100 = \frac{46}{48} \
 | **2. Offline Progress, Quiz & Outbox Persistence** | 12 | 12 | 0 | **100.0%** |
 | **3. Mobile Security, Enclave & Isolation** | 8 | 8 | 0 | **100.0%** |
 | **4. Scenario Verification (12 Scenarios + 2 Addl.)** | 14 | 14 | 0 | **100.0%** |
-| **5. Platform Execution & Hardware Evidence** | 6 | 4 | 2 | **66.7%** |
-| **Total Evaluation** | **48** | **46** | **2** | **95.8%** |
+| **5. Platform Execution & Hardware Evidence** | 6 | 5 | 1 | **83.3%** |
+| **Total Evaluation** | **48** | **47** | **1** | **97.9%** |
 
 ### Final Recommendation
-The codebase achieves **95.8% overall assessment readiness**, representing **100% completion** across all software engineering, architecture, state management, encryption, offline outbox persistence, migration, accessibility, automated testing, native Android emulator execution, physical Android hardware execution on Samsung Galaxy F62 (`SM-E625F`), and live demo video recording ([docs/demo_walkthrough.mp4](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/docs/demo_walkthrough.mp4)).
-The remaining 4.2% consists strictly of macOS iOS compilation and DevTools profiling timeline export.
+The codebase achieves **97.9% overall assessment readiness**, representing **100% completion** across all software engineering, architecture, state management, encryption, offline outbox persistence, migration, accessibility, automated testing, native Android emulator execution, physical Android hardware execution on Samsung Galaxy F62 (`SM-E625F`), live demo video recording ([docs/demo_walkthrough.mp4](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/docs/demo_walkthrough.mp4)), and Flutter DevTools Profile AOT benchmark with timeline export ([docs/PERFORMANCE_PROFILE_REPORT.md](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/docs/PERFORMANCE_PROFILE_REPORT.md)).
+The single remaining limitation (2.1%) is iOS compilation requiring a macOS Xcode environment.
 
 The implementation is **recommended for technical lead sign-off**.

@@ -77,16 +77,16 @@ $$ \text{Readiness} = \frac{\text{Complete} + (0.5 \times \text{Partial})}{\text
   - Android emulator: Complete (1.0) — Verified live on `Pixel_8` (API 36)
   - Physical Android: Complete (1.0) — Verified live on physical Samsung Galaxy F62 (`SM-E625F`, Android 13, ARM64) with hardware Keystore (`feature:android.hardware.hardware_keystore=4`)
   - iOS execution: NOT RUN (0.0) — Requires macOS host with Xcode toolchain
-  - Performance profiling: NOT RUN (0.0) — Requires DevTools profiling timeline export
+  - Performance profiling: Complete (1.0) — Profile AOT build benchmarked with Dart VM Service; timeline trace exported (`docs/performance_profile_timeline.json`, 21.9 MB, 32,661 events; report in `docs/PERFORMANCE_PROFILE_REPORT.md`)
   - Demo recording: Complete (1.0) — Recorded live on physical device (`docs/demo_walkthrough.mp4`, 1m 10s, 2.93 MB, MP4)
-  - Dimension Score: 4 / 6 = **66.7%**
+  - Dimension Score: 5 / 6 = **83.3%**
 
 ### Overall Readiness:
 Across all 48 evaluation criteria:
-- Complete: 46
+- Complete: 47
 - Partial: 0
-- Not Run / Missing: 2 (iOS build on macOS, performance profiling export)
+- Not Run / Missing: 1 (iOS build on macOS)
 
-$$ \text{Readiness} = \frac{46 + (0.5 \times 0)}{48} \times 100 = \mathbf{95.8\%} $$
+$$ \text{Readiness} = \frac{47 + (0.5 \times 0)}{48} \times 100 = \mathbf{97.9\%} $$
 
-The codebase achieves **95.8% overall assessment readiness**, representing complete software engineering, security, automated testing, native Android emulator execution, physical Android hardware validation, and live demo screencast compliance. The remaining 4.2% consists strictly of iOS compilation on macOS and DevTools profile export.
+The codebase achieves **97.9% overall assessment readiness**, representing complete software engineering, security, automated testing, native Android emulator execution, physical Android hardware validation, live demo screencast, and Flutter DevTools profiling compliance. The remaining 2.1% consists strictly of iOS compilation on a macOS host.

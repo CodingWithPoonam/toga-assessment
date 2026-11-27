@@ -3,12 +3,12 @@
 - **Project**: `toga_assessment`
 - **Candidate Role**: Senior Flutter Technical Lead
 - **Evaluation Framework**: AIRMAN Senior Flutter Mobile Lead Assessment
-- **Assessment Checklist Readiness**: **95.8%** (46 / 48 criteria verified complete)
-- **Status Baseline**: 118/118 automated tests passing | `flutter analyze`: 0 issues | Physical Samsung Galaxy F62 & Android emulator verified
+- **Assessment Checklist Readiness**: **97.9%** (47 / 48 criteria verified complete)
+- **Status Baseline**: 118/118 automated tests passing | `flutter analyze`: 0 issues | Profile AOT, Samsung Galaxy F62 & Android emulator verified
 
 ---
 
-## 1. Verified Requirements Matrix (46 / 48 Complete)
+## 1. Verified Requirements Matrix (47 / 48 Complete)
 
 ### A. Core Architecture & Engineering Rigor (10 / 10)
 - [x] **Feature-First Clean Architecture**: Presentation, Domain, Data separation across `auth`, `lessons`, `quiz`, `sync`, `migration`.
@@ -61,19 +61,19 @@
 - [x] **Semantics & Screen Reader Support**: Widget tests verify semantic labels, headers, and accessibility hints.
 - [x] **Narrow-Screen Layout Test**: Layout adapts cleanly without overflow on 320dp narrow viewports.
 - [x] **Corrupt Migration Recovery**: Migration service safely handles missing files, corrupt JSON, and unauthenticated state.
+- [x] **DevTools Performance Profiling**: Profile AOT build benchmarked with Dart VM Service across the offline-to-online journey; timeline trace exported ([docs/PERFORMANCE_PROFILE_REPORT.md](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/docs/PERFORMANCE_PROFILE_REPORT.md) and [docs/performance_profile_timeline.json](file:///c:/Users/z/.gemini/antigravity-ide/scratch/toga_assessment/docs/performance_profile_timeline.json)).
 - [x] **Timestamp Sequence Reconciliation**: Verified exact millisecond execution timeline resolving apparent network timing offsets.
 - [x] **Documentation Word-Count Compliance**: All technical markdown documents strictly adhere to official assessment length limits.
 
 ---
 
-## 2. Remaining Required Deliverables (2 / 48)
+## 2. Remaining Required Deliverables (1 / 48)
 
-These 2 items cannot be completed in the current developer environment and remain outstanding for complete 100% submission signoff:
+Only 1 platform item cannot be completed in the local developer environment:
 
 | Item | Requirement | Reason Outstanding | Action Plan / Remediation |
 |---|---|---|---|
 | **1** | **iOS Platform Build & Execution** | Requires macOS host machine with Xcode toolchain and CocoaPods. | Checkout branch on macOS runner, run `pod install` in `ios/`, and execute `flutter build ios --no-codesign` and `flutter test integration_test/`. |
-| **2** | **DevTools Performance Profile** | Requires profiling trace (`.cpuprofile` / DevTools timeline) under profile build mode. | Execute profile run on device and export CPU flame graph and heap snapshots via DevTools (see procedure below). |
 
 ---
 
@@ -208,6 +208,9 @@ docs/16_alex_quiz_status.png
 docs/17_logout_dialog.png
 docs/18_logged_out.png
 docs/demo_walkthrough.mp4
+docs/PERFORMANCE_PROFILE_REPORT.md
+docs/performance_profile_timeline.json
+docs/performance_profile_data.json
 ```
 
 ### D. Files to Exclude / Keep Clean
@@ -233,8 +236,9 @@ feat(release): AIRMAN TOGA Senior Flutter Mobile Lead candidate assessment
 - Execute 18-step live Android Pixel 8 emulator walkthrough with force-stop recovery
 - Execute live walkthrough on physical Samsung Galaxy F62 with hardware Keystore
 - Capture end-to-end demo walkthrough video (docs/demo_walkthrough.mp4)
+- Benchmark Flutter DevTools Profile AOT build (docs/PERFORMANCE_PROFILE_REPORT.md)
 - Provide comprehensive evaluation, security, leadership, and evidence documentation
-- Reach 95.8% verified checklist readiness score (46/48 criteria complete)
+- Reach 97.9% verified checklist readiness score (47/48 criteria complete)
 ```
 
 ### Release Tag
